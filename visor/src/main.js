@@ -8,6 +8,7 @@ import { C, fmt, annualBars, pairedBars, lineChart, contextBrush, legendHtml, me
 import { createMap } from './map.js';
 import { initTour } from './tour.js';
 import { initStory } from './story.js';
+import { enhanceSelects, syncSelects } from './select.js';
 
 const $ = (s) => document.querySelector(s);
 const MES_A_DEF = 10; // nov 2019
@@ -156,6 +157,7 @@ function render() {
   if (!$('#panel-serie').hidden) renderSerie(K, P);
   if (!$('#panel-panorama').hidden) renderPanorama(K, P);
   if (!$('#panel-ab').hidden) renderAB(K);
+  syncSelects();
 }
 
 function setSeg(sel, v) {
@@ -168,11 +170,11 @@ function renderScopeLine(K, P) {
   const clases = st.clases.size === D.meta.clases.length ? 'todos los tipos' : [...st.clases].map((c) => CLASE_LABEL[c]).join(', ');
   const actor = st.actor ? ACTORES.find((a) => a[0] === st.actor)[1].toLowerCase() : null;
   let donde;
-  if (st.sitio) donde = `<b>${nombreAmbito()}</b> (${st.sitio}) · siniestros a ≤ ${st.radio} m de este sitio · ${nCam} cámara${nCam > 1 ? 's' : ''}`;
-  else if (st.corredor)
-    donde = `<b>${st.corredor}</b> · siniestros a ≤ ${st.radio} m de sus ${sitios.length} sitio${sitios.length > 1 ? 's' : ''} de cámara (${nCam} cámaras), no toda la vía`;
-  else donde = `<b>Bogotá</b> · toda la ciudad · ${sitios.length} sitios · ${nCam} cámaras`;
-  $('#scope-line').innerHTML = `Ámbito: ${donde} · ${gravLabel()} · ${clases}${actor ? ` · con ${actor}` : ''}${st.excluirCruce ? ' · sin intersecciones ambiguas' : ''} · <b>${st.tab === 'ab' ? 'meses A/B independientes del periodo' : P.label}</b>`;
+  if (st.sitio) donde = `<b>${nombreAmbito()}</b> · ≤ ${st.radio} m · ${nCam} cámara${nCam > 1 ? 's' : ''}`;
+  else if (st.corredor) donde = `<b>${st.corredor}</b> · ${sitios.length} sitio${sitios.length > 1 ? 's' : ''} · ≤ ${st.radio} m`;
+  else donde = `<b>Bogotá</b> · ${sitios.length} sitios · ${nCam} cámaras`;
+  const extra = [clases !== 'todos los tipos' ? clases : null, actor ? `con ${actor}` : null, st.excluirCruce ? 'sin cruces ambiguos' : null].filter(Boolean).join(' · ');
+  $('#scope-line').innerHTML = `${donde} · ${gravLabel()}${extra ? ` · ${extra}` : ''} · <b>${st.tab === 'ab' ? 'meses A/B' : P.label}</b>`;
 }
 
 // ---------------------------------------------------------------- mapa
@@ -197,14 +199,14 @@ function renderMap(K, P) {
     gravLabel: GRAVEDAD[st.gravedad].short === 'todos' ? 'siniestros' : `siniestros ${GRAVEDAD[st.gravedad].short}`,
   });
   $('#map-title').textContent = `${nombreAmbito()} · mapa`;
-  $('#map-sub').textContent = `${fmt.int(lat.length)} ${gravLabel()} · ${P.label}. Las cámaras se muestran todas (el periodo no las filtra).`;
+  $('#map-sub').textContent = `${fmt.int(lat.length)} ${gravLabel()} · ${P.label}`;
   const gravs = GRAVEDAD[st.gravedad].min;
   $('#map-legend').innerHTML = `
     <span><i class="lg-sitio"></i>Sitio de cámara (tamaño = n.º de cámaras)</span>
     <span><i class="lg-line" style="background:${C.despues}"></i>Corredor seleccionado</span>
-    <span><i class="lg-line" style="background:#857d71"></i>Tramo con cámara · <i class="lg-line" style="background:#c9c1b4"></i>sin cámara</span>
-    <span><i class="lg-dot" style="background:#b0241c"></i>Con muertos${gravs <= 1 ? ` <i class="lg-dot" style="background:#eb6834"></i>Con heridos` : ''}${gravs === 0 ? ` <i class="lg-dot" style="background:#8f8a80"></i>Solo daños` : ''}</span>
-    <span class="muted">${st.corredor || st.sitio ? 'Clic en otro sitio o «Quitar selección» para volver a Bogotá.' : 'Clic en un sitio o en un tramo rojo/gris para seleccionar.'}</span>`;
+    <span><i class="lg-line" style="background:#8a93a0"></i>Tramo con cámara · <i class="lg-line" style="background:#c2c9d2"></i>sin cámara</span>
+    <span><i class="lg-dot" style="background:#c23128"></i>Con muertos${gravs <= 1 ? ` <i class="lg-dot" style="background:#eb6834"></i>Con heridos` : ''}${gravs === 0 ? ` <i class="lg-dot" style="background:#9aa2ae"></i>Solo daños` : ''}</span>
+    <span class="muted">${st.corredor || st.sitio ? 'Clic en otro sitio o «Quitar selección».' : 'Clic en un sitio o tramo.'}</span>`;
 }
 
 // ---------------------------------------------------------------- ficha
@@ -231,15 +233,15 @@ function renderFicha(K, P) {
     </header>
     <p class="kpi">N = ${fmt.int(N)} <span>· ${years.length} año${years.length > 1 ? 's' : ''} visible${years.length > 1 ? 's' : ''}</span></p>
     <div id="f-anual" class="chart"></div>
-    <h3 class="sec">Antes vs. después <span>promedio mensual · 2019 vs. 2021–22 (siempre los 4 años)</span></h3>
+    <h3 class="sec">Antes vs. después <span>prom. mensual · 2019 vs. 2021–22</span></h3>
     <div class="legend-inline"><span><i style="background:${C.antes}"></i>Antes 2019</span><span><i style="background:${C.despues}"></i>Después 2021–22</span></div>
     <div id="f-ad"></div>
     <p class="read"><b>Diferencia contra el control: ${pp}.</b> ${lectura}</p>
-    <h3 class="sec">Víctimas ${st.gravedad === 'fatal' ? 'fatales' : 'heridas o fatales'} por condición <span>promedio mensual · ${nombreZona()}</span></h3>
+    <h3 class="sec">Víctimas ${st.gravedad === 'fatal' ? 'fatales' : 'heridas o fatales'} por condición <span>prom. mensual · ${nombreZona()}</span></h3>
     <div id="f-vict"></div>
     <h3 class="sec">Cámaras en el ámbito</h3>
     <p class="cams">${sitios.length} sitio${sitios.length > 1 ? 's' : ''} · ${nCam} cámaras · ${[...new Set(sitios.map((s) => s.tipo))].join(' / ')} · límite ${[...new Set(sitios.map((s) => s.limite))].sort().join('/')} km/h · resoluciones ${d3min(sitios.map((s) => s.fecha))} a ${d3max(sitios.map((s) => s.fecha))}</p>
-    <p class="caveat">Cambio descriptivo; no prueba un efecto causal. Antes tiene 12 meses y después 24, por eso se compara el promedio mensual.</p>`;
+    <p class="caveat">Cambio descriptivo, no causal. Se compara el promedio mensual (antes: 12 meses; después: 24).</p>`;
 
   annualBars($('#f-anual'), years.map((y) => {
     const i = y - 2019;
@@ -360,7 +362,7 @@ function serieLinea(K, P) {
     monthly: [...K.mScope], monthStartDay, range: st.rango,
     onBrush: (rg) => set({ rango: rg }),
   });
-  $('#s-note').innerHTML = `N = ${fmt.int(nIn)} en el rango. <b>Arrastra sobre la franja de abajo</b> para acercar: con menos de 400 días la serie pasa a semanas y con menos de 100 a días. Pasa el cursor para ver cada valor. La banda gris marca la instalación (nov-2019 a mar-2020) y 2020.`;
+  $('#s-note').innerHTML = `N = ${fmt.int(nIn)} en el rango. <b>Arrastra la franja de abajo</b> para acercar (meses → semanas → días). La banda gris marca la instalación.`;
 }
 
 function tickDays([a, b], gran) {
@@ -435,7 +437,7 @@ function serieControl(K, P) {
     tooltip: (i) => `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Cámara: índice <b>${fmt.int(zi[i])}</b> (${fmt.int(K.mZona[i])} casos)${st.ctrlOn ? `<br>${legendDot(C.ctrl)} Control: índice <b>${fmt.int(ci[i])}</b> (${fmt.int(K.mCtrl[i])} casos)` : ''}`,
   });
   $('#s-context').innerHTML = '';
-  $('#s-note').innerHTML = `Se indexa para poder comparar magnitudes muy distintas en un solo eje. Si la línea de cámara queda por debajo de la de control después de 2020, la zona mejoró relativamente más.`;
+  $('#s-note').innerHTML = `Índice para comparar magnitudes distintas en un eje. Cámara por debajo del control tras 2020 = la zona mejoró más.`;
 }
 
 function serieVelocidad(P) {
@@ -474,7 +476,7 @@ function serieVelocidad(P) {
     directLabels: true, height: 190, yFormat: (d) => d,
     tooltip: (i) => `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label}: <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
   });
-  $('#v-note').textContent = 'P85 = velocidad que no supera el 85 % del tráfico. Es la velocidad del flujo del tramo, no la del vehículo del siniestro. Solo tramos con datos en los 4 años.';
+  $('#v-note').textContent = 'P85 = velocidad bajo la que va el 85 % del tráfico (flujo del tramo, no el vehículo del siniestro).';
 }
 
 // ---------------------------------------------------------------- panorama
@@ -491,7 +493,7 @@ function renderPanorama(K, P) {
   el.innerHTML = `
     <header class="panel-head">
       <div><h2>Panorama · Bogotá</h2>
-        <p class="sub">Cambio del promedio mensual, 2019 → 2021–22 · ${gravLabel()} · siniestros a ≤ ${st.radio} m de las cámaras</p>
+        <p class="sub">Cambio prom. mensual 2019 → 2021–22 · ${gravLabel()} · ≤ ${st.radio} m</p>
       </div>
     </header>
     <div class="pan-section" id="pan-gravedad-wrap">
@@ -684,6 +686,7 @@ async function init() {
   D = await loadData();
   st.clases = new Set(D.meta.clases);
   bindUI();
+  enhanceSelects();
   mapCtl = createMap($('#map'), D, {
     onSelectSitio: (id) => {
       if (st.sitio === id) return set({ sitio: null });

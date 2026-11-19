@@ -39,7 +39,7 @@ const PointsLayer = L.Layer.extend({
     const base = n > 20000 ? 0.8 : n > 4000 ? 1.1 : 1.7;
     const r = base * Math.min(3, Math.max(0.8, (z - 11) * 0.5 + 1));
     // Dibujar en orden de gravedad para que los fatales queden encima
-    const colors = ['rgba(120,113,103,0.35)', 'rgba(235,104,52,0.55)', 'rgba(176,36,28,0.95)'];
+    const colors = ['rgba(140,148,160,0.4)', 'rgba(235,104,52,0.55)', 'rgba(194,49,40,0.92)'];
     for (let level = 0; level <= 2; level++) {
       ctx.fillStyle = colors[level];
       ctx.beginPath();
@@ -92,7 +92,7 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
   // Tramos Bitcarrier
   const tramoLines = D.geo.tramos.map((t) => {
     const latlngs = t.lines.map((line) => line.map(([x, y]) => [y, x]));
-    const pl = L.polyline(latlngs, { renderer: canvasRenderer, weight: 2, color: '#b9b0a3', opacity: 0.8 });
+    const pl = L.polyline(latlngs, { renderer: canvasRenderer, weight: 2, color: '#aab2bd', opacity: 0.85 });
     pl.tramo = t;
     pl.on('mouseover', (ev) => {
       if (!t.corredor) return;
@@ -132,7 +132,7 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
       const t = pl.tramo;
       const on = selCorr && t.corredor === selCorr;
       pl.setStyle({
-        color: on ? C.despues : t.cam ? '#857d71' : '#c9c1b4',
+        color: on ? C.despues : t.cam ? '#8a93a0' : '#c2c9d2',
         weight: on ? 4 : t.cam ? 2.5 : 1.6,
         opacity: selCorr && !on ? 0.55 : 0.9,
       });

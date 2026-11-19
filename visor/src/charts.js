@@ -1,18 +1,20 @@
 import * as d3 from 'd3';
 
 export const C = {
-  ink: '#1f1d1a',
-  ink2: '#5b5750',
-  muted: '#8f8a80',
-  grid: '#e7e1d6',
-  track: '#ece6db',
-  antes: '#2a78d6', // A / antes
-  despues: '#c8372c', // B / después
-  y2020: '#8f8a80',
+  ink: '#18212e',
+  ink2: '#4a5563',
+  muted: '#6b7686',
+  grid: '#e6eaf0',
+  track: '#eef1f5',
+  surface: '#ffffff', // halo/gap sobre paneles
+  neutral: '#c3cad4', // barra 2020 / neutro
+  antes: '#2360bd', // A / antes
+  despues: '#c23128', // B / después
+  y2020: '#9aa2ae',
   y2021: '#eb6834',
   y2022: '#b0241c',
   cam: '#6250d6',
-  ctrl: '#1baf7a',
+  ctrl: '#0f9d6b',
 };
 
 export const fmt = {
@@ -69,7 +71,7 @@ export function annualBars(el, data, { yMax, onHover } = {}) {
     .attr('transform', (d) => `translate(${x(d.year) + (x.bandwidth() - bw) / 2},0)`);
   g.append('path')
     .attr('d', (d) => roundedTop(0, y(d.n), bw, y(0) - y(d.n), 4))
-    .attr('fill', (d) => (d.year === 2020 ? '#cfc6b8' : d.year === 2019 ? C.antes : d.year >= 2021 ? C.despues : C.ink));
+    .attr('fill', (d) => (d.year === 2020 ? C.neutral : d.year === 2019 ? C.antes : d.year >= 2021 ? C.despues : C.ink));
   g.append('text').attr('class', 'val').attr('x', bw / 2).attr('y', (d) => y(d.n) - 6).attr('text-anchor', 'middle')
     .text((d) => fmt.int(d.n));
   g.append('rect').attr('x', -6).attr('width', bw + 12).attr('y', m.t - 10).attr('height', H - m.t - m.b + 10)
@@ -172,7 +174,7 @@ export function lineChart(el, o) {
     if (o.points ?? o.xs.length <= 64) {
       gl.append('g').selectAll('circle').data(s.ys.map((v, i) => [o.xs[i], v]).filter((d) => d[1] != null)).join('circle')
         .attr('cx', (d) => x(d[0])).attr('cy', (d) => y(d[1])).attr('r', o.xs.length > 30 ? 2.2 : 3.2)
-        .attr('fill', s.color).attr('stroke', '#fffdf9').attr('stroke-width', 1);
+        .attr('fill', s.color).attr('stroke', C.surface).attr('stroke-width', 1);
     }
   }
   // etiquetas directas al final de cada línea, separadas para que no se monten
@@ -192,7 +194,7 @@ export function lineChart(el, o) {
   const cross = svg.append('line').attr('class', 'cross').attr('y1', m.t).attr('y2', H - m.b).style('opacity', 0);
   const dots = svg.append('g').style('opacity', 0);
   const dotSel = dots.selectAll('circle').data(o.series).join('circle').attr('r', 4.5)
-    .attr('fill', (s) => s.color).attr('stroke', '#fffdf9').attr('stroke-width', 2);
+    .attr('fill', (s) => s.color).attr('stroke', C.surface).attr('stroke-width', 2);
   svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b)
     .attr('fill', 'transparent').style('cursor', o.onClick ? 'crosshair' : 'default')
     .on('mousemove', (ev) => {
@@ -235,7 +237,7 @@ export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
     .attr('x', (d, i) => x(monthStartDay[i]) + 0.5)
     .attr('width', (d, i) => Math.max(1, x(monthStartDay[i + 1] ?? 1461) - x(monthStartDay[i]) - 1))
     .attr('y', (d) => y(d)).attr('height', (d) => y(0) - y(d))
-    .attr('fill', (d, i) => (i < 12 ? '#9dbfe9' : i < 24 ? '#d6cfc4' : '#e6a39c'));
+    .attr('fill', (d, i) => (i < 12 ? '#bcd2f0' : i < 24 ? '#dfe4ea' : '#eeb8b2'));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).tickValues([0, 365, 731, 1096]).tickSize(3).tickFormat((d, i) => 2019 + i))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
@@ -283,7 +285,7 @@ export function dumbbell(el, rows, { selected, onSelect } = {}) {
   const rowsG = svg.append('g').selectAll('g').data(rows).join('g')
     .attr('class', (r) => `db-row${r.key === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
     .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
-  rowsG.append('rect').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
+  rowsG.append('rect').attr('class', 'db-bg').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
     .attr('rx', 4).attr('fill', (r) => (r.key === selected ? 'var(--soft)' : 'transparent'));
   rowsG.append('text').attr('class', 'db-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
     .attr('text-anchor', 'end').text((r) => r.label);
@@ -298,7 +300,7 @@ export function dumbbell(el, rows, { selected, onSelect } = {}) {
   rowsG.append('circle').attr('class', 'db-dot ctrl')
     .attr('cx', (r) => x(r.b)).attr('cy', rowH / 2).attr('r', 5)
     .attr('fill', C.ctrl);
-  rowsG.append('rect').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
+  rowsG.append('rect').attr('class', 'db-hit').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
     .attr('fill', 'transparent')
     .on('mousemove', (ev, r) => showTip(r.tip, ev))
     .on('mouseleave', hideTip)
@@ -347,7 +349,7 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
   const g = svg.append('g').selectAll('g').data(rows).join('g')
     .attr('class', (r) => `cd-row${r.corredor === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
     .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
-  g.append('rect').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
+  g.append('rect').attr('class', 'cd-bg').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
     .attr('rx', 4).attr('fill', (r) => (r.corredor === selected ? 'var(--soft)' : 'transparent'));
   g.append('text').attr('class', 'cd-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
     .attr('text-anchor', 'end').text((r) => r.corredor);
@@ -357,7 +359,7 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
     .attr('fill', (r) => (r.corredor === selected ? C.despues : C.cam));
   g.append('text').attr('class', 'cd-n').attr('x', W - m.r + 10).attr('y', rowH / 2 + 4)
     .text((r) => fmt.int(r.n));
-  g.append('rect').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
+  g.append('rect').attr('class', 'cd-hit').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
     .attr('fill', 'transparent')
     .on('mousemove', (ev, r) => showTip(r.tip, ev))
     .on('mouseleave', hideTip)

@@ -1,0 +1,10 @@
+# Material de clase (labs, teoría, guía del parcial) — no es parte del proyecto
+clase/
+
+# Skills de terceros instaladas por `npx skills add` (no son parte del proyecto)
+.agents/
+.claude/skills/
+skills-lock.json
+
+# Basura del SO
+.DS_Store
