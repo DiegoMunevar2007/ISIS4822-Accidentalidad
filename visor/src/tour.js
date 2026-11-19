@@ -32,7 +32,7 @@ export function initTour({ set, getState, defaults, onStart }) {
     {
       sel: '.f-periodo',
       title: '2 · Filtra',
-      text: 'Periodo (antes 2019, transición 2020, después 2021–22) y gravedad. En «Más filtros» están el tipo de siniestro, el actor (moto, peatón…), el radio y las intersecciones ambiguas.',
+      text: 'Periodo (antes de la instalación: 2019; instalación y pandemia: 2020; después: 2021–22) y gravedad. En «Más filtros» están el tipo de siniestro, el actor (moto, peatón…), el radio y las intersecciones ambiguas.',
     },
     {
       sel: '#panel-ficha', before: () => set({ tab: 'mapa', mapa: true }),

@@ -26,6 +26,7 @@ const defaults = () => ({
   excluirCruce: false,
   mapa: true,
   serieModo: 'linea',
+  banda: 'instalacion', // banda temporal visible en la serie: instalación o pandemia
   velModo: 'ambas',
   ctrlOn: true,
   rango: null, // [día0, día1] del brush
@@ -67,6 +68,7 @@ function nombreZona() {
   return `Zonas con cámara (≤ ${st.radio} m)`;
 }
 const gravLabel = () => GRAVEDAD[st.gravedad].label;
+const ySiniestros = () => gravLabel().replace(/^./, (c) => c.toUpperCase());
 
 // ---------------------------------------------------------------- cálculo (memo por estado de filtros)
 function compute() {
@@ -136,8 +138,8 @@ function render() {
   $('#panel-ab').hidden = st.tab !== 'ab';
 
   // controles
-  setSeg('#seg-periodo', st.periodo);
-  setSeg('#seg-gravedad', st.gravedad);
+  $('#sel-periodo').value = st.periodo;
+  $('#sel-gravedad').value = st.gravedad;
   $('#sel-corredor').value = st.corredor ?? '';
   fillSitios();
   $('#sel-sitio').value = st.sitio ?? '';
@@ -158,10 +160,6 @@ function render() {
   if (!$('#panel-panorama').hidden) renderPanorama(K, P);
   if (!$('#panel-ab').hidden) renderAB(K);
   syncSelects();
-}
-
-function setSeg(sel, v) {
-  document.querySelectorAll(`${sel} button`).forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === v));
 }
 
 function renderScopeLine(K, P) {
@@ -229,7 +227,7 @@ function renderFicha(K, P) {
 
   el.innerHTML = `
     <header class="panel-head">
-      <div><h2>${nombreAmbito()} · ficha</h2><p class="sub">${P.label} · ${gravLabel()}</p></div>
+      <div><h2>${nombreAmbito()} · ficha</h2></div>
     </header>
     <p class="kpi">N = ${fmt.int(N)} <span>· ${years.length} año${years.length > 1 ? 's' : ''} visible${years.length > 1 ? 's' : ''}</span></p>
     <div id="f-anual" class="chart"></div>
@@ -248,6 +246,7 @@ function renderFicha(K, P) {
     return { year: y, n: sumRange(K.mScope, i * 12, i * 12 + 11) };
   }), {
     yMax: Math.max(...ANIOS.map((y, i) => sumRange(K.mScope, i * 12, i * 12 + 11))),
+    yLabel: ySiniestros(),
     onHover: (d) => `<b>${d.year}</b>${d.year === 2020 ? ' · transición (pandemia e instalación)' : ''}<br>${fmt.int(d.n)} ${gravLabel()}<br>${fmt.dec(d.n / 12)} por mes`,
   });
   pairedBars($('#f-ad'), [
@@ -277,10 +276,19 @@ const d3max = (a) => a.reduce((x, y) => (y > x ? y : x));
 function renderSerie(K, P) {
   const el = $('#panel-serie');
   const modos = [['linea', 'Línea de tiempo'], ['anios', 'Años superpuestos'], ['control', 'Cámara vs. control']];
+  const bandaSeg = st.serieModo === 'anios' ? '' : `
+        <div class="seg small" id="seg-banda" aria-label="Banda temporal">
+          <span>Banda</span>
+          <button data-v="instalacion" aria-pressed="${st.banda === 'instalacion'}">Instalación</button>
+          <button data-v="pandemia" aria-pressed="${st.banda === 'pandemia'}">Pandemia 2020</button>
+        </div>`;
   el.innerHTML = `
     <header class="panel-head">
       <div><h2>${nombreAmbito()} · serie</h2><p class="sub" id="s-sub"></p></div>
-      <div class="seg small" id="seg-modo">${modos.map(([v, l]) => `<button data-v="${v}" aria-pressed="${st.serieModo === v}">${l}</button>`).join('')}</div>
+      <div class="head-segs">
+        ${bandaSeg}
+        <div class="seg small" id="seg-modo">${modos.map(([v, l]) => `<button data-v="${v}" aria-pressed="${st.serieModo === v}">${l}</button>`).join('')}</div>
+      </div>
     </header>
     <div id="s-legend"></div>
     <div id="s-main" class="chart"></div>
@@ -298,6 +306,7 @@ function renderSerie(K, P) {
     <div id="v-chart" class="chart"></div>
     <p class="caveat" id="v-note"></p>`;
   el.querySelectorAll('#seg-modo button').forEach((b) => b.addEventListener('click', () => set({ serieModo: b.dataset.v })));
+  el.querySelectorAll('#seg-banda button').forEach((b) => b.addEventListener('click', () => set({ banda: b.dataset.v })));
   el.querySelectorAll('#seg-vel button').forEach((b) => b.addEventListener('click', () => set({ velModo: b.dataset.v })));
 
   if (st.serieModo === 'linea') serieLinea(K, P);
@@ -342,14 +351,18 @@ function serieLinea(K, P) {
   const yMax = Math.max(1, ...ys);
   const inR = xs.map((x) => x >= r[0] - 16 && x <= r[1] + 16);
   const gl = { mes: 'meses', semana: 'semanas', dia: 'días' }[gran];
-  $('#s-sub').textContent = `${fmtDia(r[0])} – ${fmtDia(r[1])} · por ${gl} · ${gravLabel()} · escala fija 0–${fmt.int(yMax)}`;
+  $('#s-sub').textContent = `${fmtDia(r[0])} – ${fmtDia(r[1])} · por ${gl}`;
   const nIn = ys.reduce((a, v, i) => a + (inR[i] ? v : 0), 0);
+  const bandas = st.banda === 'pandemia'
+    ? [{ x0: monthStartDay[12], x1: monthStartDay[24], label: 'Pandemia 2020' }]
+    : [{ x0: INSTALACION[0], x1: INSTALACION[1], label: 'Instalación' }];
   lineChart($('#s-main'), {
     xs: xs.filter((_, i) => inR[i]),
     series: [{ key: 'z', label: nombreAmbito(), color: C.ink, ys: ys.filter((_, i) => inR[i]) }],
     xDomain: r, yMax,
     xTicks: tickDays(r, gran), xTickFormat: (d) => tickFmt(d, gran),
-    bands: [{ x0: INSTALACION[0], x1: INSTALACION[1], label: 'Instalación' }, { x0: monthStartDay[12], x1: monthStartDay[24], label: '' }],
+    yLabel: ySiniestros(), xLabel: 'Fecha',
+    bands: bandas,
     vlines: [{ x: OPERACION, label: 'Multas desde may-2020', color: C.ink2, dash: true }],
     tooltip: (i) => {
       const k = xs.findIndex((x) => x === xs.filter((_, j) => inR[j])[i]);
@@ -362,7 +375,7 @@ function serieLinea(K, P) {
     monthly: [...K.mScope], monthStartDay, range: st.rango,
     onBrush: (rg) => set({ rango: rg }),
   });
-  $('#s-note').innerHTML = `N = ${fmt.int(nIn)} en el rango. <b>Arrastra la franja de abajo</b> para acercar (meses → semanas → días). La banda gris marca la instalación.`;
+  $('#s-note').innerHTML = `N = ${fmt.int(nIn)} en el rango. <b>Arrastra la franja de abajo</b> para acercar (meses → semanas → días). La banda gris marca ${st.banda === 'pandemia' ? '2020 (pandemia)' : 'la instalación'}.`;
 }
 
 function tickDays([a, b], gran) {
@@ -393,11 +406,12 @@ function serieAnios(K, P) {
     ys: Array.from({ length: 12 }, (_, k) => K.mScope[(y - 2019) * 12 + k]),
   }));
   const yMax = Math.max(1, ...K.mScope);
-  $('#s-sub').textContent = `Cada línea es un año (enero a diciembre) · ${gravLabel()} · escala fija 0–${fmt.int(yMax)}`;
+  $('#s-sub').textContent = 'Cada línea es un año (enero a diciembre)';
   $('#s-legend').innerHTML = legendHtml(series.map((s) => ({ label: s.label + (s.key === 2019 ? ' (antes)' : s.key === 2020 ? ' (transición)' : ' (después)'), color: s.color, dash: s.dash })));
   lineChart($('#s-main'), {
     xs: [...Array(12).keys()], series, xDomain: [0, 11], yMax,
     xTicks: [...Array(12).keys()], xTickFormat: (k) => MESES_CORTOS[k],
+    yLabel: ySiniestros(), xLabel: 'Mes',
     directLabels: true, points: true, height: 270,
     tooltip: (i) => `<b>${MESES_CORTOS[i]}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label}: <b>${fmt.int(s.ys[i])}</b>`).join('<br>')}`,
   });
@@ -421,17 +435,21 @@ function serieControl(K, P) {
     { key: 'z', label: 'Cámara', color: C.cam, ys: zi },
   ];
   if (st.ctrlOn) series.push({ key: 'c', label: 'Control', color: C.ctrl, dash: true, ys: ci });
-  $('#s-sub').textContent = `Índice: promedio mensual de 2019 = 100 · media móvil de 3 meses · ${gravLabel()}`;
+  $('#s-sub').textContent = 'Índice: promedio mensual de 2019 = 100 · media móvil de 3 meses';
   $('#s-legend').innerHTML = legendHtml([
     { label: `${nombreZona()}`, color: C.cam },
     ...(st.ctrlOn ? [{ label: `Control: vías medidas a > ${st.radio} m de cámaras`, color: C.ctrl, dash: true }] : []),
   ]) + `<label class="legend-toggle"><input type="checkbox" id="chk-ctrl" ${st.ctrlOn ? 'checked' : ''} /> Ver control</label>`;
   $('#chk-ctrl')?.addEventListener('change', (e) => set({ ctrlOn: e.target.checked }));
+  const bandas = st.banda === 'pandemia'
+    ? [{ x0: 12, x1: 24, label: 'Pandemia 2020' }]
+    : [{ x0: 10.6, x1: 14.9, label: 'Instalación' }];
   lineChart($('#s-main'), {
     xs, series, xDomain: [P.m0, P.m1], yMax: Math.max(140, ...zi.slice(P.m0, P.m1 + 1), ...(st.ctrlOn ? ci.slice(P.m0, P.m1 + 1) : [0])),
     xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: (m) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12]),
+    yLabel: 'Índice (2019 = 100)', xLabel: 'Fecha',
     refLines: [{ y: 100, label: 'nivel 2019' }],
-    bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación' }, { x0: 11.5, x1: 23.5, label: '' }],
+    bands: bandas,
     vlines: [{ x: 16, label: 'Multas', color: C.ink2, dash: true }],
     directLabels: true, height: 260,
     tooltip: (i) => `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Cámara: índice <b>${fmt.int(zi[i])}</b> (${fmt.int(K.mZona[i])} casos)${st.ctrlOn ? `<br>${legendDot(C.ctrl)} Control: índice <b>${fmt.int(ci[i])}</b> (${fmt.int(K.mCtrl[i])} casos)` : ''}`,
@@ -471,6 +489,7 @@ function serieVelocidad(P) {
     yMin: Math.floor((Math.min(...vals, v.limite ?? 99) - 5) / 5) * 5,
     yMax: Math.ceil((Math.max(...vals, v.limite ?? 0) + 3) / 5) * 5,
     xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: (m) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12]),
+    yLabel: 'Velocidad P85 (km/h)', xLabel: 'Fecha',
     refLines: v.limite ? [{ y: v.limite, label: `límite ${v.limite} km/h` }] : [],
     vlines: [{ x: 16, color: C.ink2, dash: true }],
     directLabels: true, height: 190, yFormat: (d) => d,
@@ -604,6 +623,7 @@ function renderAB(K) {
   lineChart($('#ab-serie'), {
     xs, series: [{ key: 'z', label: nombreZona(), color: C.ink, ys: [...K.mZona] }], xDomain: [0, 47],
     xTicks: xs.filter((m) => m % 3 === 0), xTickFormat: (m) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12]),
+    yLabel: ySiniestros(), xLabel: 'Fecha',
     bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación' }],
     vlines: [{ x: a, label: 'A', color: C.antes, width: 2 }, { x: b, label: 'B', color: C.despues, width: 2 }],
     height: 220,
@@ -662,8 +682,9 @@ function bindUI() {
   rng.addEventListener('input', () => ($('#radio-val').textContent = `${rng.value} m`));
   rng.addEventListener('change', () => set({ radio: +rng.value }));
   $('#chk-cruce').addEventListener('change', (e) => set({ excluirCruce: e.target.checked }));
-  $('#seg-periodo').addEventListener('click', (e) => e.target.dataset.v && set({ periodo: e.target.dataset.v }));
-  $('#seg-gravedad').addEventListener('click', (e) => e.target.dataset.v && set({ gravedad: e.target.dataset.v }));
+  $('#sel-periodo').innerHTML = Object.entries(PERIODOS).map(([k, p]) => `<option value="${k}">${p.label}</option>`).join('');
+  $('#sel-periodo').addEventListener('change', (e) => set({ periodo: e.target.value }));
+  $('#sel-gravedad').addEventListener('change', (e) => set({ gravedad: e.target.value }));
   $('#tabs').addEventListener('click', (e) => e.target.dataset.tab && set({ tab: e.target.dataset.tab }));
   $('#btn-hide-map').addEventListener('click', () => set({ mapa: false }));
   $('#map-rail').addEventListener('click', () => set({ mapa: true }));

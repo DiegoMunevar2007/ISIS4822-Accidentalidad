@@ -65,7 +65,7 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
     {
       act: 0,
       title: 'La instalación coincidió con la pandemia',
-      body: () => `La banda gris marca la instalación y 2020. Ese año el tráfico cayó por la pandemia y las multas empezaron en mayo de 2020. Un antes/después simple mezclaría las cámaras con todo lo demás.`,
+      body: () => `La banda gris marca la instalación; con el selector de arriba puedes cambiarla por la pandemia de 2020. Ese año el tráfico cayó y las multas empezaron en mayo de 2020. Un antes/después simple mezclaría las cámaras con todo lo demás.`,
       hint: 'Arrastra sobre la franja inferior para acercar la serie; vuelve a arrastrar para alejar.',
       patch: { ...reset(), tab: 'serie', mapa: false, serieModo: 'linea', gravedad: 'fatal' },
       focus: ['#panel-serie'],

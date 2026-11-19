@@ -65,23 +65,18 @@
         <span>Sitio de cámara</span>
         <select id="sel-sitio"></select>
       </label>
-      <div class="f f-periodo">
+      <label class="f f-periodo">
         <span>Periodo</span>
-        <div class="seg" id="seg-periodo">
-          <button data-v="todo">Todo</button>
-          <button data-v="antes">Antes</button>
-          <button data-v="transicion">2020</button>
-          <button data-v="despues">Después</button>
-        </div>
-      </div>
-      <div class="f f-grav">
+        <select id="sel-periodo"></select>
+      </label>
+      <label class="f f-grav">
         <span>Gravedad</span>
-        <div class="seg" id="seg-gravedad">
-          <button data-v="fatal">Con muertos</button>
-          <button data-v="grave">Heridos o muertos</button>
-          <button data-v="todos">Todos</button>
-        </div>
-      </div>
+        <select id="sel-gravedad">
+          <option value="fatal">Con muertos</option>
+          <option value="grave">Heridos o muertos</option>
+          <option value="todos">Todos</option>
+        </select>
+      </label>
       <details class="f f-more" id="more-filters">
         <summary>Más filtros <b id="more-count"></b></summary>
         <div class="more-body">
@@ -136,7 +131,7 @@
     </main>
 
     <footer class="foot">
-      Antes = 2019 · 2020 = instalación y pandemia · Después = 2021–22. Sitios críticos (regresión a la media): compara siempre contra el control.
+      Antes de la instalación = 2019 · 2020 = instalación y pandemia · Después de la instalación = 2021–22. Sitios críticos (regresión a la media): compara siempre contra el control.
     </footer>
   </div>
 

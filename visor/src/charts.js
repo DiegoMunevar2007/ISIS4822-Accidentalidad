@@ -51,11 +51,11 @@ export const legendHtml = (items) =>
   `<div class="chart-legend">${items.map((s) => `<span>${sw(s.color, s.dash)}${s.label}</span>`).join('')}</div>`;
 
 // ---------------------------------------------------------------- barras anuales
-export function annualBars(el, data, { yMax, onHover } = {}) {
+export function annualBars(el, data, { yMax, onHover, yLabel = 'Siniestros', xLabel = 'Año' } = {}) {
   el.innerHTML = '';
   const W = el.clientWidth || 360;
-  const H = 168;
-  const m = { t: 22, r: 8, b: 24, l: 34 };
+  const H = 184;
+  const m = { t: 34, r: 8, b: 40, l: 34 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
   const x = d3.scaleBand(data.map((d) => d.year), [m.l, W - m.r]).padding(0.38);
   const max = yMax ?? d3.max(data, (d) => d.n) ?? 1;
@@ -78,6 +78,9 @@ export function annualBars(el, data, { yMax, onHover } = {}) {
     .attr('fill', 'transparent')
     .on('mousemove', (ev, d) => showTip(onHover(d), ev))
     .on('mouseleave', hideTip);
+  if (yLabel) svg.append('text').attr('class', 'ylabel').attr('x', 0).attr('y', 12).text(yLabel);
+  if (xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+    .attr('text-anchor', 'middle').text(xLabel);
 }
 
 function roundedTop(x, y, w, h, r) {
@@ -122,7 +125,7 @@ export function lineChart(el, o) {
   el.innerHTML = '';
   const W = el.clientWidth || 600;
   const H = o.height ?? 260;
-  const m = { t: 26, r: o.directLabels ? 78 : 14, b: 26, l: 40 };
+  const m = { t: 26, r: o.directLabels ? 78 : 14, b: o.xLabel ? 42 : 26, l: 40 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
   const x = d3.scaleLinear(o.xDomain ?? d3.extent(o.xs), [m.l, W - m.r]);
   const allY = o.series.flatMap((s) => s.ys.filter((v) => v != null));
@@ -151,6 +154,8 @@ export function lineChart(el, o) {
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa)
     .call((g) => g.select('.domain').attr('stroke', C.grid));
   if (o.yLabel) svg.append('text').attr('class', 'ylabel').attr('x', m.l - 34).attr('y', 12).text(o.yLabel);
+  if (o.xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+    .attr('text-anchor', 'middle').text(o.xLabel);
 
   for (const r of o.refLines ?? []) {
     svg.append('line').attr('class', 'refline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r.y)).attr('y2', y(r.y));
@@ -269,7 +274,7 @@ export function dumbbell(el, rows, { selected, onSelect } = {}) {
   if (!rows.length) return;
   const W = el.clientWidth || 560;
   const rowH = 44;
-  const m = { t: 26, r: 18, b: 32, l: 158 };
+  const m = { t: 26, r: 18, b: 46, l: 158 };
   const H = m.t + rows.length * rowH + m.b;
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'dumbbell');
   const vals = rows.flatMap((r) => [r.a, r.b]).filter((v) => v != null);
@@ -309,6 +314,8 @@ export function dumbbell(el, rows, { selected, onSelect } = {}) {
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).ticks(4).tickFormat((v) => fmt.pct(v)).tickSize(3))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
+  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+    .attr('text-anchor', 'middle').text('Cambio (%)');
   if (onSelect) svg.style('cursor', 'pointer');
 }
 
@@ -323,7 +330,7 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
   if (!rows.length) return;
   const W = el.clientWidth || 760;
   const rowH = 25;
-  const m = { t: 30, r: 54, b: 34, l: 168 };
+  const m = { t: 30, r: 54, b: 48, l: 168 };
   const H = m.t + rows.length * rowH + m.b;
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'corridor-dots');
   const vals = rows.map((r) => r.value).filter((v) => v != null);
@@ -370,5 +377,7 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
     .call((g) => g.select('.domain').attr('stroke', C.grid));
   svg.append('text').attr('class', 'cd-hint').attr('x', W - m.r + 10).attr('y', m.t - 24)
     .attr('text-anchor', 'end').text('N');
+  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+    .attr('text-anchor', 'middle').text('Cambio (%)');
   if (onSelect) svg.style('cursor', 'pointer');
 }

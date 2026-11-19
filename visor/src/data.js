@@ -7,9 +7,9 @@ export const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'a
 
 export const PERIODOS = {
   todo: { label: 'Todo 2019–2022', m0: 0, m1: 47 },
-  antes: { label: 'Antes · 2019', m0: 0, m1: 11 },
-  transicion: { label: 'Transición · 2020', m0: 12, m1: 23 },
-  despues: { label: 'Después · 2021–2022', m0: 24, m1: 47 },
+  antes: { label: 'Antes de la instalación · 2019', m0: 0, m1: 11 },
+  transicion: { label: 'Instalación y pandemia · 2020', m0: 12, m1: 23 },
+  despues: { label: 'Después de la instalación · 2021–2022', m0: 24, m1: 47 },
 };
 
 export const GRAVEDAD = {
