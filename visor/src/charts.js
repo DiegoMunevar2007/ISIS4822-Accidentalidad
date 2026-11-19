@@ -381,3 +381,60 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
     .attr('text-anchor', 'middle').text('Cambio (%)');
   if (onSelect) svg.style('cursor', 'pointer');
 }
+
+// ---------------------------------------------------------------- dispersión: velocidad vs. gravedad
+/**
+ * rows: [{ corredor, speed, share, total, fatal, tip }]
+ * speed = P85 media del corredor (km/h); share = fracción de siniestros con muertos.
+ */
+export function speedSeverityScatter(el, rows, { selected, onSelect } = {}) {
+  el.innerHTML = '';
+  if (!rows.length) {
+    el.innerHTML = '<p class="muted">Sin datos de velocidad para estos corredores.</p>';
+    return;
+  }
+  const W = el.clientWidth || 700;
+  const H = 300;
+  const m = { t: 26, r: 24, b: 46, l: 48 };
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'scatter');
+  const x = d3.scaleLinear(d3.extent(rows, (d) => d.speed), [m.l, W - m.r]).nice(4);
+  const y = d3.scaleLinear([0, (d3.max(rows, (d) => d.share) || 0.01) * 100], [H - m.b, m.t]).nice(4);
+  const rr = d3.scaleSqrt(d3.extent(rows, (d) => d.total), [4, 10]);
+  const yt = y.ticks(4);
+  const yfmt = (v) => `${Number.isInteger(v) ? v : v.toFixed(1).replace('.', ',')} %`;
+
+  svg.append('g').attr('class', 'grid').selectAll('line').data(yt).join('line')
+    .attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
+  svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
+    .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat(yfmt))
+    .call((g) => g.select('.domain').remove());
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(5).tickSize(3).tickFormat((v) => fmt.int(v)))
+    .call((g) => g.select('.domain').attr('stroke', C.grid));
+  svg.append('text').attr('class', 'ylabel').attr('x', 0).attr('y', 12).text('% siniestros con muertos');
+  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+    .attr('text-anchor', 'middle').text('Velocidad P85 (km/h)');
+
+  const g = svg.append('g').selectAll('g').data(rows).join('g')
+    .attr('transform', (d) => `translate(${x(d.speed)},${y(d.share * 100)})`)
+    .attr('class', (d) => `sc-row${d.corredor === selected ? ' sel' : ''}`);
+  g.append('circle').attr('r', (d) => rr(d.total))
+    .attr('fill', (d) => (d.corredor === selected ? C.despues : C.cam))
+    .attr('fill-opacity', 0.72).attr('stroke', C.surface).attr('stroke-width', 1.5)
+    .on('mousemove', (ev, d) => showTip(d.tip, ev))
+    .on('mouseleave', hideTip)
+    .on('click', (_, d) => onSelect?.(d.corredor));
+
+  // etiquetas mínimas: el más rápido, el de mayor proporción y el seleccionado
+  const mark = new Set([rows.reduce((a, b) => (b.speed > a.speed ? b : a)).corredor,
+    rows.reduce((a, b) => (b.share > a.share ? b : a)).corredor]);
+  if (selected) mark.add(selected);
+  for (const d of rows.filter((d) => mark.has(d.corredor))) {
+    const right = x(d.speed) > W * 0.72;
+    svg.append('text').attr('class', 'sc-label')
+      .attr('x', x(d.speed) + (right ? -rr(d.total) - 6 : rr(d.total) + 6))
+      .attr('y', y(d.share * 100) + 4)
+      .attr('text-anchor', right ? 'end' : 'start').text(d.corredor);
+  }
+  if (onSelect) svg.style('cursor', 'pointer');
+}

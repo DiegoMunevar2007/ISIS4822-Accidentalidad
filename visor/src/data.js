@@ -262,5 +262,29 @@ export function cambioPorCorredor(D, st) {
   });
 }
 
+/** Velocidad P85 media y proporción de siniestros fatales por corredor (tramos con cámara). */
+export function velocidadGravedadPorCorredor(D, st) {
+  const { rows, geo, vel } = D;
+  const mask = baseMask(D, { ...st, gravedad: 'todos' });
+  const R = st.radio;
+  const total = new Uint32Array(geo.corredores.length);
+  const fatal = new Uint32Array(geo.corredores.length);
+  for (let i = 0; i < rows.n; i++) {
+    if (!mask[i] || rows.dc[i] > R) continue;
+    const ci = rows.corr[i];
+    total[ci]++;
+    if (rows.g[i] === 2) fatal[ci]++;
+  }
+  return geo.corredores.map((corredor, ci) => {
+    const p85 = (vel.corredor[corredor]?.cam?.p85 ?? []).filter((v) => v != null);
+    if (!p85.length || !total[ci]) return null;
+    const speed = p85.reduce((a, b) => a + b, 0) / p85.length;
+    return {
+      corredor, speed, total: total[ci], fatal: fatal[ci], share: fatal[ci] / total[ci],
+      tip: `<b>${corredor}</b><br>Velocidad P85 media: ${fmtDec(speed)} km/h<br>Siniestros con muertos: ${fatal[ci]} de ${total[ci].toLocaleString('es-CO')} (${(100 * fatal[ci] / total[ci]).toFixed(1).replace('.', ',')} %)<br><span class="muted">Tramos con cámara · ≤ ${R} m</span>`,
+    };
+  }).filter(Boolean);
+}
+
 const pct = (v) => (v == null || !isFinite(v) ? '—' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(1).replace('.', ',')} %`);
 const fmtDec = (v) => (v == null || !isFinite(v) ? '—' : v.toFixed(1).replace('.', ','));

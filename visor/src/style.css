@@ -219,6 +219,7 @@ input[type='range'] { accent-color: var(--ink); }
 .db-row.clickable:hover .db-bg, .cd-row.clickable:hover .cd-bg { fill: var(--soft); }
 .db-hit, .cd-hit { fill: transparent; }
 .cd-label { font-size: 12px; fill: var(--ink-2); }
+.sc-label { font-size: 11px; font-weight: 600; fill: var(--ink-2); }
 .cd-row.sel .cd-label { fill: var(--ink); font-weight: 700; }
 .cd-n { font-size: 10.5px; fill: var(--muted); }
 .cd-hint { font-size: 10.5px; fill: var(--muted); }
@@ -265,8 +266,6 @@ body.story-on .app { padding-right: 414px; }
 .story-hint::before { content: 'Prueba: '; font-weight: 700; }
 .story-warn { margin: 10px 0 0; font-size: 12px; color: var(--b); }
 .story-warn button { border: 0; background: none; color: var(--b); text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
-.story-state { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 10px; }
-.story-state span { font-size: 10.5px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--bg); }
 .story-actions { display: flex; justify-content: space-between; gap: 8px; }
 .story-cards { display: grid; gap: 6px; margin-top: 10px; }
 .story-cards details { border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; background: var(--surface); }

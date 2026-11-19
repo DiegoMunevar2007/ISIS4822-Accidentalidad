@@ -2,18 +2,16 @@
 // dashboard: cada paso fija un estado, resalta un panel y habilita un solo
 // control. El dashboard sigue siendo el dashboard.
 
-import { GRAVEDAD, PERIODOS, cambioPorGravedad, cambioPorCorredor } from './data.js';
+import { cambioPorGravedad } from './data.js';
 import { fmt } from './charts.js';
 
 const ACTS = [
-  { name: 'Acto I', label: 'El montaje', steps: [0, 1, 2] },
-  { name: 'Acto II', label: 'La evidencia', steps: [3, 4, 5] },
-  { name: 'Acto III', label: 'La lectura', steps: [6, 7] },
+  { name: 'Acto I', label: 'El montaje', steps: [0] },
+  { name: 'Acto II', label: 'La evidencia', steps: [1, 2, 3, 4, 5, 6] },
+  { name: 'Acto III', label: 'La lectura', steps: [7, 8] },
 ];
 
-const KEYS = ['tab', 'mapa', 'corredor', 'sitio', 'periodo', 'gravedad', 'radio', 'excluirCruce', 'serieModo', 'velModo', 'ctrlOn', 'rango', 'actor'];
-
-const TAB_LABEL = { mapa: 'Mapa y ficha', serie: 'Serie', panorama: 'Panorama', ab: 'Meses A/B' };
+const KEYS = ['tab', 'mapa', 'corredor', 'sitio', 'periodo', 'gravedad', 'radio', 'excluirCruce', 'serieModo', 'banda', 'velModo', 'ctrlOn', 'rango', 'actor'];
 
 export function initStory({ set, getState, defaults, D, hideLanding }) {
   const el = document.getElementById('story');
@@ -23,7 +21,6 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
   const body = document.getElementById('story-body');
   const hint = document.getElementById('story-hint');
   const warn = document.getElementById('story-warn');
-  const stateEl = document.getElementById('story-state');
   const back = document.getElementById('story-back');
   const next = document.getElementById('story-next');
   const close = document.getElementById('story-close');
@@ -45,51 +42,48 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
   function metrics() {
     const st = reset();
     st.gravedad = 'fatal';
-    const byGrav = cambioPorGravedad(D, st);
-    const corridors = cambioPorCorredor(D, { ...st, gravedad: 'grave' });
-    return { byGrav, corridors };
+    return { byGrav: cambioPorGravedad(D, st) };
   }
   const g = (k) => M.byGrav.find((x) => x.key === k) ?? M.byGrav[0];
   const fatal = () => g('fatal');
-  const grave = () => g('grave');
 
   const STEPS = [
     {
       act: 0,
-      title: '92 cámaras, 40 sitios, una promesa',
-      body: () => `Bogotá instaló <b>92 cámaras</b> en <b>40 sitios</b> de 18 corredores entre nov-2019 y mar-2020. Los sitios se eligieron por ser críticos. El visor cruza <b>${fmt.int(D.rows.n)}</b> siniestros georreferenciados con esa geografía.`,
-      hint: 'Pasa el cursor por los puntos del mapa: cada uno es un sitio de cámara.',
+      title: 'El montaje',
+      body: () => `Bogotá instaló <b>92 cámaras</b> en <b>40 sitios</b> de 18 corredores entre nov-2019 y mar-2020. Mira el mapa: cada círculo es un sitio y su tamaño, el número de cámaras. El control son tramos medidos a más de 500 m de cualquier cámara.`,
+      hint: 'Pasa el cursor por un sitio para ver su corredor y sus cámaras.',
       patch: { ...reset(), tab: 'mapa', mapa: true, gravedad: 'fatal' },
       focus: ['#panel-map', '#panel-ficha'],
-    },
-    {
-      act: 0,
-      title: 'La instalación coincidió con la pandemia',
-      body: () => `La banda gris marca la instalación; con el selector de arriba puedes cambiarla por la pandemia de 2020. Ese año el tráfico cayó y las multas empezaron en mayo de 2020. Un antes/después simple mezclaría las cámaras con todo lo demás.`,
-      hint: 'Arrastra sobre la franja inferior para acercar la serie; vuelve a arrastrar para alejar.',
-      patch: { ...reset(), tab: 'serie', mapa: false, serieModo: 'linea', gravedad: 'fatal' },
-      focus: ['#panel-serie'],
-      spot: '#s-context',
-      allow: ['rango'],
-    },
-    {
-      act: 0,
-      title: 'Comparamos contra vías medidas sin cámara',
-      body: () => `El control son tramos que Bitcarrier mide y que están a más de <b>500 m</b> de cualquier cámara. Si las cámaras funcionaran, la línea morada debería caer más que la verde.`,
-      hint: 'Enciende y apaga «Ver control» en la leyenda para ver qué añade la comparación.',
-      patch: { ...reset(), tab: 'serie', mapa: false, serieModo: 'control', gravedad: 'fatal', ctrlOn: true },
-      focus: ['#panel-serie'],
-      spot: '#s-main',
-      allow: ['ctrlOn'],
+      spot: '#map',
     },
     {
       act: 1,
-      title: 'En agregado, el control mejoró más',
+      title: 'El quiebre de 2020',
+      body: () => `Acerca la franja inferior a nov-2019–mar-2020. Mira dónde empieza la caída y qué ocurre después de mayo de 2020, cuando arrancan las multas. La caída gruesa coincide con la pandemia y las multas: la instalación sola no explica el quiebre.`,
+      hint: 'Arrastra sobre la franja gris para acercar; vuelve a arrastrar para alejar.',
+      patch: { ...reset(), tab: 'serie', mapa: false, serieModo: 'linea', gravedad: 'fatal', banda: 'instalacion' },
+      focus: ['#panel-serie'],
+      spot: '#s-context',
+      allow: ['rango', 'banda'],
+    },
+    {
+      act: 1,
+      title: 'No todas las víctimas cambian igual',
+      body: () => `Baja hasta «Víctimas fatales por condición» en la ficha. Compara cada fila: azul es 2019 y roja, 2021–22. El peatón baja; moto y ciclista suben. Son promedios mensuales y algunos casos son pocos.`,
+      hint: 'Pasa el cursor por una fila para ver los valores mensuales.',
+      patch: { ...reset(), tab: 'mapa', mapa: true, gravedad: 'fatal' },
+      focus: ['#panel-ficha'],
+      spot: '#f-vict',
+    },
+    {
+      act: 1,
+      title: 'La comparación incómoda',
       body: () => {
         const f = fatal();
-        return `Con muertos, la zona con cámara pasó de <b>${fmt.dec(f.zona.ma)}</b> a <b>${fmt.dec(f.zona.md)}</b> casos por mes (${fmt.pct(f.zona.cambio)}); el control bajó de ${fmt.dec(f.control.ma)} a ${fmt.dec(f.control.md)} (${fmt.pct(f.control.cambio)}). Con heridos o muertos y con todos, el control también mejoró más.`;
+        return `En Panorama, mira los tres niveles de gravedad. El punto morado es la zona con cámara; el verde, el control de la ciudad. Con muertos, la zona pasó de <b>${fmt.dec(f.zona.ma)}</b> a <b>${fmt.dec(f.zona.md)}</b> casos por mes (${fmt.pct(f.zona.cambio)}); el control, de ${fmt.dec(f.control.ma)} a ${fmt.dec(f.control.md)} (${fmt.pct(f.control.cambio)}). El control bajó más: en el agregado, las cámaras no muestran una mejora adicional.`;
       },
-      hint: 'Cambia la gravedad: la fila se ilumina y el resto del visor se recalcula.',
+      hint: 'Pasa el cursor por cada fila para ver los promedios mensuales.',
       patch: { ...reset(), tab: 'panorama', gravedad: 'fatal' },
       focus: ['#panel-panorama'],
       spot: '#pan-gravedad-wrap',
@@ -97,30 +91,33 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
     },
     {
       act: 1,
-      title: 'El promedio esconde 18 corredores',
-      body: () => {
-        const vals = M.corridors.map((c) => c.cambio).filter((v) => v != null);
-        const ctrl = grave().control.cambio;
-        const mejor = Math.min(...vals);
-        const peor = Math.max(...vals);
-        const nMejor = vals.filter((v) => v < ctrl).length;
-        return `Cada punto es el cambio de la zona con cámara de un corredor. Van de <b>${fmt.pct(mejor)}</b> a <b>${fmt.pct(peor)}</b>: ${nMejor} de ${vals.length} caen por debajo del control de la ciudad (${fmt.pct(ctrl)}). El promedio no los representa.`;
-      },
-      hint: 'Haz clic en un corredor para ver su antes/después y su N.',
-      patch: { ...reset(), tab: 'panorama', gravedad: 'grave' },
-      focus: ['#panel-panorama'],
-      spot: '#pan-corredores-wrap',
-      allow: ['corredor', 'sitio'],
+      title: 'El mapa antes y después',
+      body: () => `Quédate en el mapa y cambia solo el periodo: primero «Antes de la instalación», después «Después de la instalación». Mantén el zoom y la gravedad en «Con muertos». Los choques fatales se concentran en los mismos corredores.`,
+      hint: 'Usa el selector Periodo; no muevas el mapa.',
+      patch: { ...reset(), tab: 'mapa', mapa: true, gravedad: 'fatal', periodo: 'antes' },
+      focus: ['#panel-map'],
+      spot: '#map',
+      allow: ['periodo'],
     },
     {
       act: 1,
-      title: 'La velocidad bajó en algunos corredores',
-      body: () => `En los tramos con cámara, la velocidad P85 cambió más que en los tramos sin cámara en varios corredores. Es la velocidad del flujo, no la del vehículo del siniestro: un mecanismo posible, no una prueba.`,
-      hint: 'Alterna «Con cámara» y «Sin cámara» para comparar las dos series.',
-      patch: { ...reset(), tab: 'serie', mapa: false, serieModo: 'control', gravedad: 'grave', velModo: 'ambas' },
-      focus: ['#panel-serie'],
-      spot: '#v-chart',
-      allow: ['velModo'],
+      title: 'Rápido no es grave',
+      body: () => `Cada punto es un corredor: a la derecha, más velocidad; arriba, más peso de los siniestros con muertos. Pasa el cursor por los extremos y compara. Los corredores rápidos no son necesariamente los más graves.`,
+      hint: 'Haz clic en un punto para ver el corredor y su N.',
+      patch: { ...reset(), tab: 'panorama', gravedad: 'grave' },
+      focus: ['#panel-panorama'],
+      spot: '#pan-vel-wrap',
+      allow: ['corredor'],
+    },
+    {
+      act: 1,
+      title: 'Los dos extremos',
+      body: () => `En «Los 18 corredores», busca el punto más a la izquierda y el más a la derecha. Haz clic en cada uno y lee su tarjeta: 2019, 2021–22, cambio, control y N. Los extremos tienen nombre, pero varios se apoyan en pocos casos: el promedio no los representa.`,
+      hint: 'Haz clic en un punto para fijar el corredor.',
+      patch: { ...reset(), tab: 'panorama', gravedad: 'grave' },
+      focus: ['#panel-panorama'],
+      spot: '#pan-corredores-wrap',
+      allow: ['corredor'],
     },
     {
       act: 2,
@@ -138,29 +135,13 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
     {
       act: 2,
       title: 'Lo que sí podemos decir',
-      body: () => `No encontramos que, en conjunto, las cámaras redujeran los siniestros más que el control. Hay corredores donde la mejora coincide; este diseño no permite atribuirla. El visor queda abierto para que lo compruebes.`,
+      body: () => `En conjunto, las cámaras no redujeron los siniestros más que el control. Hay corredores donde la mejora coincide, pero este diseño no permite atribuirla. El visor queda abierto para que lo compruebes.`,
       hint: 'Cierra la historia y explora: elige un corredor, oculta el mapa y compara dos meses en A/B.',
       patch: { ...reset(), tab: 'mapa', mapa: true, gravedad: 'fatal' },
       focus: ['#panel-map', '#panel-ficha'],
       allowAll: true,
     },
   ];
-
-  function chips() {
-    const st = getState();
-    const sitio = st.sitio && D.geo.sitios.find((s) => s.id === st.sitio);
-    const ambito = sitio ? `${sitio.corredor} · ${sitio.via}` : st.corredor ?? 'Bogotá';
-    const items = [
-      ambito,
-      GRAVEDAD[st.gravedad].short,
-      PERIODOS[st.periodo].label,
-      `${st.radio} m`,
-      TAB_LABEL[st.tab] ?? st.tab,
-    ];
-    if (st.actor) items.push('con actor');
-    if (st.excluirCruce) items.push('sin cruces');
-    return items.map((t) => `<span>${t}</span>`).join('');
-  }
 
   function renderRail() {
     const s = STEPS[i];
@@ -176,7 +157,6 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
     }
     hint.textContent = s.hint ?? '';
     hint.hidden = !s.hint;
-    stateEl.innerHTML = chips();
     back.disabled = i === 0;
     next.textContent = i === STEPS.length - 1 ? 'Explorar el visor' : 'Siguiente';
     progress.innerHTML = ACTS.map((a, ai) => `
@@ -259,7 +239,6 @@ export function initStory({ set, getState, defaults, D, hideLanding }) {
 
   function onStateChange(st) {
     if (!active || applying || !base) return;
-    stateEl.innerHTML = chips();
     if (STEPS[i].allowAll) return;
     const allow = STEPS[i].allow ?? [];
     const changed = KEYS.filter((k) => !same(st[k], base[k]));

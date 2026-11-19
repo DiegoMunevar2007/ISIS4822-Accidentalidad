@@ -2,9 +2,9 @@ import './style.css';
 import {
   loadData, baseMask, scopeTest, zonaTest, controlTest, porMes, porDia, antesDespues, victimasPorCondicion,
   sitiosDelAmbito, camarasActivas, velocidadDelAmbito, sumRange, PERIODOS, GRAVEDAD, ACTORES, CLASE_LABEL,
-  ANIOS, MESES_CORTOS, mesLabel, N_MESES, cambioPorGravedad, cambioPorCorredor,
+  ANIOS, MESES_CORTOS, mesLabel, N_MESES, cambioPorGravedad, cambioPorCorredor, velocidadGravedadPorCorredor,
 } from './data.js';
-import { C, fmt, annualBars, pairedBars, lineChart, contextBrush, legendHtml, meter, dumbbell, corridorDots } from './charts.js';
+import { C, fmt, annualBars, pairedBars, lineChart, contextBrush, legendHtml, meter, dumbbell, corridorDots, speedSeverityScatter } from './charts.js';
 import { createMap } from './map.js';
 import { initTour } from './tour.js';
 import { initStory } from './story.js';
@@ -506,6 +506,7 @@ function renderPanorama(K, P) {
   const all = cambioPorCorredor(D, st).sort((a, b) => (a.cambio ?? 0) - (b.cambio ?? 0));
   const conDato = all.filter((c) => c.cambio != null);
   const sinDato = all.length - conDato.length;
+  const velGrav = velocidadGravedadPorCorredor(D, st);
   const sel = st.corredor ? all.find((c) => c.corredor === st.corredor) : null;
   const diff = sel && sel.cambio != null && gSel.control.cambio != null ? sel.cambio - gSel.control.cambio : null;
 
@@ -526,6 +527,11 @@ function renderPanorama(K, P) {
       <div class="legend-inline"><span><i style="background:${C.cam}"></i>Cambio de la zona con cámara</span><span><i class="dash-i" style="border-color:${C.ink2}"></i>Control de la ciudad (${fmt.pct(gSel.control.cambio)})</span><span class="muted">N = siniestros del corredor en el periodo</span></div>
       ${sinDato ? `<p class="note">${sinDato} corredor${sinDato > 1 ? 'es' : ''} sin casos en 2019: no se pueden situar en la escala de cambio.</p>` : ''}
     </div>
+    <div class="pan-section" id="pan-vel-wrap">
+      <h3 class="sec">Velocidad y gravedad <span>cada punto es un corredor · P85 vs. % de siniestros con muertos</span></h3>
+      <div class="chart" id="pan-vel"></div>
+      <p class="note">La velocidad es la del flujo (P85, tramos con cámara); la gravedad, la proporción de siniestros con muertos a ≤ ${st.radio} m de las cámaras. No mide exposición: un corredor con más tráfico puede tener más casos.</p>
+    </div>
     <div class="pan-detail" id="pan-detalle"></div>`;
 
   dumbbell($('#pan-gravedad'), grav.map((g) => ({
@@ -536,6 +542,11 @@ function renderPanorama(K, P) {
     corredor: c.corredor, value: c.cambio, n: c.n, tip: c.tip,
   })), {
     control: gSel.control.cambio,
+    selected: st.corredor,
+    onSelect: (c) => set({ corredor: c, sitio: null }),
+  });
+
+  speedSeverityScatter($('#pan-vel'), velGrav, {
     selected: st.corredor,
     onSelect: (c) => set({ corredor: c, sitio: null }),
   });
