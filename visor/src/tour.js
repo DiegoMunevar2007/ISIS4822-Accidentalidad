@@ -2,7 +2,7 @@
 
 const KEY = 'camaras-visor-visto';
 
-export function initTour({ set, getState, defaults }) {
+export function initTour({ set, getState, defaults, onStart }) {
   const landing = document.getElementById('landing');
   const tour = document.getElementById('tour');
   const hole = document.getElementById('tour-hole');
@@ -91,6 +91,7 @@ export function initTour({ set, getState, defaults }) {
     set(defaults());
   }
   function start() {
+    onStart?.();
     landing.hidden = true;
     tour.hidden = false;
     k = 0;
@@ -121,4 +122,6 @@ export function initTour({ set, getState, defaults }) {
   if (params.has('sinlanding')) visto = true;
   if (!visto) landing.hidden = false;
   void getState;
+
+  return { hideLanding: closeLanding, start, end };
 }

@@ -42,7 +42,7 @@ button, select, input { font: inherit; color: inherit; }
 .hint { margin: 2px 0 0; color: var(--ink-2); }
 .top-actions { display: flex; gap: 8px; }
 
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
 .tabs button {
   border: 1px solid var(--ink); background: var(--surface); padding: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;
 }
@@ -105,6 +105,7 @@ input[type='range'] { accent-color: var(--ink); }
 .stage.tab-serie.map-on { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr); }
 .stage.tab-serie.map-off { grid-template-columns: 38px minmax(0, 1fr); }
 .stage.tab-ab { grid-template-columns: minmax(0, 1fr); }
+.stage.tab-panorama { grid-template-columns: minmax(0, 1fr); }
 
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; min-width: 0; }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
@@ -167,8 +168,79 @@ input[type='range'] { accent-color: var(--ink); }
 .context { cursor: crosshair; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink-2); margin: 2px 0 2px; }
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-toggle { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.serie-subhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 2px 0 2px; }
+.serie-subhead #v-legend { flex: 1 1 auto; margin: 0; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 2px; }
+.dash-i { display: inline-block; width: 18px; height: 0; border-top: 2px dashed; vertical-align: middle; }
 #s-main { margin-top: 6px; }
+
+/* ---------- dumbbell y dot plot (panorama) ---------- */
+.zero { stroke: #c9c1b4; stroke-width: 1; }
+.control-line { stroke: var(--ink-2); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.control-label { font-size: 11px; font-weight: 600; fill: var(--ink-2); }
+.db-label { font-size: 12.5px; font-weight: 600; fill: var(--ink); }
+.db-n { font-size: 10.5px; fill: var(--muted); }
+.db-link { stroke: #cfc7ba; stroke-width: 2; }
+.db-row.clickable, .cd-row.clickable { cursor: pointer; }
+.db-row.clickable:hover rect, .cd-row.clickable:hover rect { fill: var(--soft); }
+.cd-label { font-size: 12px; fill: var(--ink-2); }
+.cd-row.sel .cd-label { fill: var(--ink); font-weight: 700; }
+.cd-n { font-size: 10.5px; fill: var(--muted); }
+.cd-hint { font-size: 10.5px; fill: var(--muted); }
+
+/* ---------- panorama ---------- */
+.panorama-panel .sec { margin-top: 0; }
+.pan-section { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.pan-section:first-of-type { margin-top: 8px; padding-top: 0; border-top: 0; }
+.pan-detail { margin-top: 18px; }
+.pan-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+.pan-card header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.pan-card h3 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 18px; }
+.pan-nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0 6px; }
+.pan-nums > div { display: flex; flex-direction: column; gap: 1px; }
+.pan-nums span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.pan-nums b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.pan-nums b.down { color: #18794e; }
+.pan-nums b.up { color: var(--b); }
+.pan-nums small { font-size: 11px; color: var(--ink-2); }
+.pan-empty { border: 1px dashed var(--line); border-radius: 10px; padding: 18px; color: var(--muted); text-align: center; }
+#pan-ver { margin-top: 8px; }
+
+/* ---------- historia guiada ---------- */
+body.story-on .app { padding-right: 414px; }
+.story {
+  position: fixed; top: 16px; right: 16px; width: 370px; max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--surface); border: 1px solid var(--ink); border-radius: 12px; padding: 15px 18px 14px;
+  box-shadow: 0 18px 50px rgba(31, 29, 26, 0.22); z-index: 3500;
+}
+.story-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.story-kicker { margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.story-progress { display: flex; gap: 10px; margin: 12px 0 14px; }
+.story-act { flex: 1; display: flex; flex-direction: column; gap: 4px; opacity: 0.42; transition: opacity 0.2s; }
+.story-act.on { opacity: 1; }
+.story-act b { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-2); }
+.story-act em { font-style: normal; font-size: 10px; color: var(--muted); }
+.story-dots { display: flex; gap: 4px; }
+.story-dots button { flex: 1; height: 5px; border: 0; border-radius: 3px; background: var(--soft); cursor: pointer; padding: 0; }
+.story-dots button.on { background: var(--ink); }
+.story-copy h2 { font-family: var(--serif); font-size: 22px; line-height: 1.12; margin: 0 0 8px; letter-spacing: -0.01em; }
+.story-body { font-size: 13.5px; color: var(--ink-2); }
+.story-body b { color: var(--ink); }
+.story-hint { margin: 12px 0 0; padding: 8px 10px; background: var(--soft); border-radius: 6px; font-size: 12.5px; color: var(--ink); }
+.story-hint::before { content: 'Prueba: '; font-weight: 700; }
+.story-warn { margin: 10px 0 0; font-size: 12px; color: var(--b); }
+.story-warn button { border: 0; background: none; color: var(--b); text-decoration: underline; cursor: pointer; padding: 0; font-weight: 600; }
+.story-state { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 10px; }
+.story-state span { font-size: 10.5px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--bg); }
+.story-actions { display: flex; justify-content: space-between; gap: 8px; }
+.story-cards { display: grid; gap: 6px; margin-top: 10px; }
+.story-cards details { border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; background: var(--surface); }
+.story-cards summary { cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.story-cards p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-2); }
+body.story-on .stage > .panel { opacity: 0.3; filter: grayscale(0.15) saturate(0.65); transition: opacity 0.25s, filter 0.25s; }
+body.story-on .stage > .panel.story-focus { opacity: 1; filter: none; box-shadow: 0 0 0 2px var(--ink); position: relative; z-index: 1; }
+.story-spot { outline: 2px solid var(--ink); outline-offset: 6px; border-radius: 8px; }
 
 /* ---------- A/B ---------- */
 .ab-grid { display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 14px; margin-top: 12px; }
@@ -195,7 +267,7 @@ input[type='range'] { accent-color: var(--ink); }
 
 /* ---------- tooltip ---------- */
 .tooltip {
-  position: fixed; z-index: 3000; pointer-events: none; background: var(--ink); color: #fff; padding: 8px 10px; border-radius: 6px;
+  position: fixed; z-index: 3600; pointer-events: none; background: var(--ink); color: #fff; padding: 8px 10px; border-radius: 6px;
   font-size: 12.5px; line-height: 1.45; max-width: 300px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 .tooltip .muted { color: #bdb7ab; }
@@ -260,6 +332,19 @@ input[type='range'] { accent-color: var(--ink); }
   .f-ab { margin-left: 0; }
   .tabs button { padding: 8px 4px; font-size: 13px; }
 }
+@media (max-width: 1180px) {
+  body.story-on .app { padding-right: 22px; padding-bottom: 50vh; }
+  .story {
+    top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 50vh;
+    border-radius: 16px 16px 0 0; border-left: 0; border-right: 0; border-bottom: 0;
+  }
+}
+@media (max-width: 640px) {
+  .pan-nums { grid-template-columns: 1fr 1fr; }
+  .story-copy h2 { font-size: 19px; }
+  .story { padding: 13px 14px 12px; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .tour-hole, .tour-card, .btn { transition: none; }
+  .tour-hole, .tour-card, .btn, .story-act, body.story-on .stage > .panel { transition: none; }
+  .story-copy { scroll-behavior: auto; }
 }

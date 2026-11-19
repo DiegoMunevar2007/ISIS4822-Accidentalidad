@@ -26,8 +26,9 @@
         <li><span>3</span><div><strong>Compara</strong> antes/después, contra zonas de control o dos meses lado a lado (A/B).</div></li>
       </ol>
       <div class="landing-actions">
-        <button class="btn primary" id="btn-tour">Recorrido guiado (1 min)</button>
-        <button class="btn" id="btn-skip">Ir directo al visor</button>
+        <button class="btn primary" id="btn-story-start">Ver la historia (2 min)</button>
+        <button class="btn" id="btn-tour">Cómo usar el visor</button>
+        <button class="btn" id="btn-skip">Explorar libremente</button>
       </div>
       <p class="fineprint">Fuentes: SDM (siniestros georreferenciados y anuarios SIGAT), inventario Cámaras Salvavidas, Bitcarrier (velocidades). Los cambios son descriptivos; no prueban un efecto causal.</p>
     </div>
@@ -41,6 +42,7 @@
         <p class="hint">Selecciona → filtra → compara.</p>
       </div>
       <div class="top-actions">
+        <button class="btn" id="btn-story" title="Recorrido guiado en tres actos">Historia</button>
         <button class="btn" id="btn-reset" title="Vuelve a la vista inicial">Reiniciar</button>
         <button class="btn" id="btn-clear" title="Vuelve a Bogotá">Quitar selección</button>
         <button class="btn icon" id="btn-help" title="Ver recorrido guiado" aria-label="Ayuda">?</button>
@@ -50,6 +52,7 @@
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-tab="mapa">Mapa y ficha</button>
       <button role="tab" data-tab="serie">Serie</button>
+      <button role="tab" data-tab="panorama">Panorama</button>
       <button role="tab" data-tab="ab">Meses A/B</button>
     </nav>
 
@@ -128,6 +131,7 @@
 
       <section class="panel ficha-panel" id="panel-ficha"></section>
       <section class="panel serie-panel" id="panel-serie"></section>
+      <section class="panel panorama-panel" id="panel-panorama"></section>
       <section class="panel ab-panel" id="panel-ab"></section>
     </main>
 
@@ -138,6 +142,26 @@
   </div>
 
   <div id="tooltip" class="tooltip" hidden></div>
+
+  <!-- ============ Historia guiada ============ -->
+  <aside id="story" class="story" hidden aria-label="Historia guiada">
+    <header class="story-head">
+      <p class="story-kicker" id="story-kicker"></p>
+      <button class="btn small" id="story-close" title="Cerrar la historia">Cerrar</button>
+    </header>
+    <div class="story-progress" id="story-progress" aria-hidden="true"></div>
+    <div class="story-copy" aria-live="polite">
+      <h2 id="story-title"></h2>
+      <div id="story-body" class="story-body"></div>
+    </div>
+    <p class="story-hint" id="story-hint"></p>
+    <p class="story-warn" id="story-warn" hidden></p>
+    <div class="story-state" id="story-state"></div>
+    <div class="story-actions">
+      <button class="btn small" id="story-back">Atrás</button>
+      <button class="btn small primary" id="story-next">Siguiente</button>
+    </div>
+  </aside>
   <div id="tour" class="tour" hidden>
     <div class="tour-hole" id="tour-hole"></div>
     <div class="tour-card" id="tour-card">

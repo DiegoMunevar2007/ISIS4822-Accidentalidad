@@ -2,11 +2,12 @@ import './style.css';
 import {
   loadData, baseMask, scopeTest, zonaTest, controlTest, porMes, porDia, antesDespues, victimasPorCondicion,
   sitiosDelAmbito, camarasActivas, velocidadDelAmbito, sumRange, PERIODOS, GRAVEDAD, ACTORES, CLASE_LABEL,
-  ANIOS, MESES_CORTOS, mesLabel, N_MESES,
+  ANIOS, MESES_CORTOS, mesLabel, N_MESES, cambioPorGravedad, cambioPorCorredor,
 } from './data.js';
-import { C, fmt, annualBars, pairedBars, lineChart, contextBrush, legendHtml, meter } from './charts.js';
+import { C, fmt, annualBars, pairedBars, lineChart, contextBrush, legendHtml, meter, dumbbell, corridorDots } from './charts.js';
 import { createMap } from './map.js';
 import { initTour } from './tour.js';
+import { initStory } from './story.js';
 
 const $ = (s) => document.querySelector(s);
 const MES_A_DEF = 10; // nov 2019
@@ -24,6 +25,8 @@ const defaults = () => ({
   excluirCruce: false,
   mapa: true,
   serieModo: 'linea',
+  velModo: 'ambas',
+  ctrlOn: true,
   rango: null, // [día0, día1] del brush
   mesA: MES_A_DEF,
   mesB: MES_B_DEF,
@@ -33,6 +36,7 @@ const defaults = () => ({
 let D;
 let st = defaults();
 let mapCtl;
+let storyCtl = null;
 let cache = {};
 
 // ---------------------------------------------------------------- utilidades de fechas
@@ -122,11 +126,12 @@ function render() {
   document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === st.tab));
   const stage = $('#stage');
   stage.className = `stage tab-${st.tab} ${st.mapa ? 'map-on' : 'map-off'}`;
-  $('#map-rail').hidden = st.tab === 'ab' || st.mapa;
+  $('#map-rail').hidden = st.tab === 'ab' || st.tab === 'panorama' || st.mapa;
   $('#ab-controls').hidden = st.tab !== 'ab';
-  $('#panel-map').hidden = st.tab === 'ab' || !st.mapa;
-  $('#panel-ficha').hidden = !(st.tab === 'mapa');
+  $('#panel-map').hidden = st.tab === 'ab' || st.tab === 'panorama' || !st.mapa;
+  $('#panel-ficha').hidden = st.tab !== 'mapa';
   $('#panel-serie').hidden = !(st.tab === 'serie' || (st.tab === 'mapa' && !st.mapa));
+  $('#panel-panorama').hidden = st.tab !== 'panorama';
   $('#panel-ab').hidden = st.tab !== 'ab';
 
   // controles
@@ -149,6 +154,7 @@ function render() {
   if (!$('#panel-map').hidden) renderMap(K, P);
   if (!$('#panel-ficha').hidden) renderFicha(K, P);
   if (!$('#panel-serie').hidden) renderSerie(K, P);
+  if (!$('#panel-panorama').hidden) renderPanorama(K, P);
   if (!$('#panel-ab').hidden) renderAB(K);
 }
 
@@ -279,10 +285,18 @@ function renderSerie(K, P) {
     <div id="s-context" class="chart"></div>
     <p class="note" id="s-note"></p>
     <h3 class="sec">Velocidad del tráfico <span id="v-sub"></span></h3>
-    <div id="v-legend"></div>
+    <div class="serie-subhead">
+      <div id="v-legend"></div>
+      <div class="seg small" id="seg-vel" aria-label="Series de velocidad">
+        <button data-v="ambas" aria-pressed="${st.velModo === 'ambas'}">Ambas</button>
+        <button data-v="cam" aria-pressed="${st.velModo === 'cam'}">Con cámara</button>
+        <button data-v="sin" aria-pressed="${st.velModo === 'sin'}">Sin cámara</button>
+      </div>
+    </div>
     <div id="v-chart" class="chart"></div>
     <p class="caveat" id="v-note"></p>`;
   el.querySelectorAll('#seg-modo button').forEach((b) => b.addEventListener('click', () => set({ serieModo: b.dataset.v })));
+  el.querySelectorAll('#seg-vel button').forEach((b) => b.addEventListener('click', () => set({ velModo: b.dataset.v })));
 
   if (st.serieModo === 'linea') serieLinea(K, P);
   else if (st.serieModo === 'anios') serieAnios(K, P);
@@ -403,21 +417,22 @@ function serieControl(K, P) {
   const xs = [...Array(N_MESES).keys()];
   const series = [
     { key: 'z', label: 'Cámara', color: C.cam, ys: zi },
-    { key: 'c', label: 'Control', color: C.ctrl, dash: true, ys: ci },
   ];
+  if (st.ctrlOn) series.push({ key: 'c', label: 'Control', color: C.ctrl, dash: true, ys: ci });
   $('#s-sub').textContent = `Índice: promedio mensual de 2019 = 100 · media móvil de 3 meses · ${gravLabel()}`;
   $('#s-legend').innerHTML = legendHtml([
     { label: `${nombreZona()}`, color: C.cam },
-    { label: `Control: vías medidas a > ${st.radio} m de cámaras`, color: C.ctrl, dash: true },
-  ]);
+    ...(st.ctrlOn ? [{ label: `Control: vías medidas a > ${st.radio} m de cámaras`, color: C.ctrl, dash: true }] : []),
+  ]) + `<label class="legend-toggle"><input type="checkbox" id="chk-ctrl" ${st.ctrlOn ? 'checked' : ''} /> Ver control</label>`;
+  $('#chk-ctrl')?.addEventListener('change', (e) => set({ ctrlOn: e.target.checked }));
   lineChart($('#s-main'), {
-    xs, series, xDomain: [P.m0, P.m1], yMax: Math.max(140, ...zi.slice(P.m0, P.m1 + 1), ...ci.slice(P.m0, P.m1 + 1)),
+    xs, series, xDomain: [P.m0, P.m1], yMax: Math.max(140, ...zi.slice(P.m0, P.m1 + 1), ...(st.ctrlOn ? ci.slice(P.m0, P.m1 + 1) : [0])),
     xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: (m) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12]),
     refLines: [{ y: 100, label: 'nivel 2019' }],
     bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación' }, { x0: 11.5, x1: 23.5, label: '' }],
     vlines: [{ x: 16, label: 'Multas', color: C.ink2, dash: true }],
     directLabels: true, height: 260,
-    tooltip: (i) => `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Cámara: índice <b>${fmt.int(zi[i])}</b> (${fmt.int(K.mZona[i])} casos)<br>${legendDot(C.ctrl)} Control: índice <b>${fmt.int(ci[i])}</b> (${fmt.int(K.mCtrl[i])} casos)`,
+    tooltip: (i) => `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Cámara: índice <b>${fmt.int(zi[i])}</b> (${fmt.int(K.mZona[i])} casos)${st.ctrlOn ? `<br>${legendDot(C.ctrl)} Control: índice <b>${fmt.int(ci[i])}</b> (${fmt.int(K.mCtrl[i])} casos)` : ''}`,
   });
   $('#s-context').innerHTML = '';
   $('#s-note').innerHTML = `Se indexa para poder comparar magnitudes muy distintas en un solo eje. Si la línea de cámara queda por debajo de la de control después de 2020, la zona mejoró relativamente más.`;
@@ -434,10 +449,17 @@ function serieVelocidad(P) {
     return;
   }
   const series = [];
-  if (v.cam.n) series.push({ key: 'c', label: 'Con cámara', color: C.cam, ys: v.cam.p85 });
-  if (v.sin.n) series.push({ key: 's', label: 'Sin cámara', color: C.ctrl, dash: true, ys: v.sin.p85 });
+  if (v.cam.n && st.velModo !== 'sin') series.push({ key: 'c', label: 'Con cámara', color: C.cam, ys: v.cam.p85 });
+  if (v.sin.n && st.velModo !== 'cam') series.push({ key: 's', label: 'Sin cámara', color: C.ctrl, dash: true, ys: v.sin.p85 });
+  if (!series.length) {
+    $('#v-chart').innerHTML = '<p class="muted">No hay tramos con ese filtro en este corredor.</p>';
+    $('#v-legend').innerHTML = '';
+    $('#v-sub').textContent = '';
+    $('#v-note').textContent = '';
+    return;
+  }
   const vals = series.flatMap((s) => s.ys.filter((x) => x != null));
-  $('#v-sub').textContent = `P85 mensual (km/h) · Bitcarrier · ${v.fuente === 'bogota' ? 'todos los tramos medidos' : v.fuente === 'sitio' ? 'tramos junto a este sitio vs. resto de la vía' : 'tramos de la vía con y sin cámara'}`;
+  $('#v-sub').textContent = `P85 mensual (km/h) · Bitcarrier · ${v.fuente === 'bogota' ? 'todos los tramos medidos' : v.fuente === 'sitio' ? 'tramos junto a este sitio vs. resto de la vía' : 'tramos de la vía con y sin cámara'}${st.velModo === 'cam' ? ' · solo con cámara' : st.velModo === 'sin' ? ' · solo sin cámara' : ''}`;
   $('#v-legend').innerHTML = legendHtml([
     ...(v.cam.n ? [{ label: `Tramos con cámara (${v.cam.n})`, color: C.cam }] : []),
     ...(v.sin.n ? [{ label: `Tramos sin cámara (${v.sin.n})`, color: C.ctrl, dash: true }] : []),
@@ -453,6 +475,70 @@ function serieVelocidad(P) {
     tooltip: (i) => `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label}: <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
   });
   $('#v-note').textContent = 'P85 = velocidad que no supera el 85 % del tráfico. Es la velocidad del flujo del tramo, no la del vehículo del siniestro. Solo tramos con datos en los 4 años.';
+}
+
+// ---------------------------------------------------------------- panorama
+function renderPanorama(K, P) {
+  const el = $('#panel-panorama');
+  const grav = cambioPorGravedad(D, st);
+  const gSel = grav.find((g) => g.key === st.gravedad) ?? grav[0];
+  const all = cambioPorCorredor(D, st).sort((a, b) => (a.cambio ?? 0) - (b.cambio ?? 0));
+  const conDato = all.filter((c) => c.cambio != null);
+  const sinDato = all.length - conDato.length;
+  const sel = st.corredor ? all.find((c) => c.corredor === st.corredor) : null;
+  const diff = sel && sel.cambio != null && gSel.control.cambio != null ? sel.cambio - gSel.control.cambio : null;
+
+  el.innerHTML = `
+    <header class="panel-head">
+      <div><h2>Panorama · Bogotá</h2>
+        <p class="sub">Cambio del promedio mensual, 2019 → 2021–22 · ${gravLabel()} · siniestros a ≤ ${st.radio} m de las cámaras</p>
+      </div>
+    </header>
+    <div class="pan-section" id="pan-gravedad-wrap">
+      <h3 class="sec">Los tres niveles de gravedad <span>clic en una fila para fijar la gravedad</span></h3>
+      <div class="chart" id="pan-gravedad"></div>
+      <div class="legend-inline"><span><i style="background:${C.cam}"></i>Zona con cámara</span><span><i style="background:${C.ctrl}"></i>Control de la ciudad</span></div>
+    </div>
+    <div class="pan-section" id="pan-corredores-wrap">
+      <h3 class="sec">Los ${all.length} corredores <span>ordenados por cambio · clic para ver el detalle</span></h3>
+      <div class="chart" id="pan-corredores"></div>
+      <div class="legend-inline"><span><i style="background:${C.cam}"></i>Cambio de la zona con cámara</span><span><i class="dash-i" style="border-color:${C.ink2}"></i>Control de la ciudad (${fmt.pct(gSel.control.cambio)})</span><span class="muted">N = siniestros del corredor en el periodo</span></div>
+      ${sinDato ? `<p class="note">${sinDato} corredor${sinDato > 1 ? 'es' : ''} sin casos en 2019: no se pueden situar en la escala de cambio.</p>` : ''}
+    </div>
+    <div class="pan-detail" id="pan-detalle"></div>`;
+
+  dumbbell($('#pan-gravedad'), grav.map((g) => ({
+    key: g.key, label: g.label, a: g.zona.cambio, b: g.control.cambio, n: g.n, tip: g.tip,
+  })), { selected: st.gravedad, onSelect: (k) => set({ gravedad: k }) });
+
+  corridorDots($('#pan-corredores'), conDato.map((c) => ({
+    corredor: c.corredor, value: c.cambio, n: c.n, tip: c.tip,
+  })), {
+    control: gSel.control.cambio,
+    selected: st.corredor,
+    onSelect: (c) => set({ corredor: c, sitio: null }),
+  });
+
+  if (!sel) {
+    $('#pan-detalle').innerHTML = `<p class="pan-empty">Haz clic en un corredor para ver su antes/después, su N y la diferencia contra el control de la ciudad.</p>`;
+    return;
+  }
+  $('#pan-detalle').innerHTML = `
+    <div class="pan-card">
+      <header><h3>${sel.corredor}</h3><span class="muted">${sel.sitios} sitio${sel.sitios > 1 ? 's' : ''} de cámara</span></header>
+      ${sel.cambio == null
+        ? '<p class="muted">Sin siniestros en 2019 con estos filtros: no hay cambio calculable.</p>'
+        : `<div class="pan-nums">
+            <div><span>2019</span><b>${fmt.dec(sel.ma)}</b><small>por mes</small></div>
+            <div><span>2021–22</span><b>${fmt.dec(sel.md)}</b><small>por mes</small></div>
+            <div><span>Cambio</span><b class="${sel.cambio < 0 ? 'down' : 'up'}">${fmt.pct(sel.cambio)}</b><small>N = ${fmt.int(sel.n)}</small></div>
+            <div><span>Control ciudad</span><b>${fmt.pct(gSel.control.cambio)}</b><small>${diff == null ? '—' : `${fmt.dec(diff * 100)} p.p. de diferencia`}</small></div>
+          </div>
+          <p class="caveat">El control es de toda la ciudad, no un control propio de este corredor. La comparación contra control se hace en el agregado.</p>`
+      }
+      <button class="btn small" id="pan-ver">Ver en el mapa</button>
+    </div>`;
+  $('#pan-ver')?.addEventListener('click', () => set({ tab: 'mapa', mapa: true }));
 }
 
 // ---------------------------------------------------------------- A/B
@@ -534,6 +620,7 @@ function set(patch) {
   const prevTab = st.tab;
   st = { ...st, ...patch };
   render();
+  storyCtl?.onStateChange(st);
   if ((prevMap !== st.mapa || prevTab !== st.tab) && st.mapa) setTimeout(() => mapCtl.invalidate(), 30);
 }
 
@@ -607,7 +694,19 @@ async function init() {
   });
   $('#loading').remove();
   render();
-  initTour({ set, getState: () => st, defaults: () => ({ ...defaults(), clases: new Set(D.meta.clases) }) });
+  const tourCtl = initTour({
+    set,
+    getState: () => st,
+    defaults: () => ({ ...defaults(), clases: new Set(D.meta.clases) }),
+    onStart: () => storyCtl?.stop(),
+  });
+  storyCtl = initStory({
+    set,
+    getState: () => st,
+    defaults: () => ({ ...defaults(), clases: new Set(D.meta.clases) }),
+    D,
+    hideLanding: tourCtl.hideLanding,
+  });
 }
 
 init();

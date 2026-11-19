@@ -218,3 +218,49 @@ export function velocidadDelAmbito(D, st) {
   if (st.corredor) return v.corredor[st.corredor] ? { ...v.corredor[st.corredor], fuente: 'corredor' } : null;
   return { ...v.bogota, limite: null, fuente: 'bogota' };
 }
+
+// ---------------------------------------------------------------- panorama (historia / pestaña)
+/** Cambio antes/después por nivel de gravedad, siempre para Bogotá (sin corredor ni sitio). */
+export function cambioPorGravedad(D, st) {
+  const base = { ...st, corredor: null, sitio: null };
+  return ['fatal', 'grave', 'todos'].map((key) => {
+    const mask = baseMask(D, { ...base, gravedad: key });
+    const zm = porMes(D, mask, zonaTest(D, base));
+    const cm = porMes(D, mask, controlTest(D, base));
+    const zona = antesDespues(zm);
+    const control = antesDespues(cm);
+    const n = sumRange(zm, 0, 47);
+    return {
+      key,
+      label: GRAVEDAD[key].short,
+      zona,
+      control,
+      n,
+      tip: `<b>${GRAVEDAD[key].label}</b><br>Zona con cámara: ${fmtDec(zona.ma)} → ${fmtDec(zona.md)} por mes (${pct(zona.cambio)})<br>Control: ${fmtDec(control.ma)} → ${fmtDec(control.md)} por mes (${pct(control.cambio)})<br><span class="muted">N en la zona: ${n.toLocaleString('es-CO')}</span>`,
+    };
+  });
+}
+
+/** Cambio antes/después de la zona con cámara para cada corredor. */
+export function cambioPorCorredor(D, st) {
+  const mask = baseMask(D, st);
+  const { rows, geo } = D;
+  return geo.corredores.map((corredor) => {
+    const ci = D.corrIdx.get(corredor);
+    const meses = new Float64Array(N_MESES);
+    for (let i = 0; i < rows.n; i++) {
+      if (!mask[i] || rows.corr[i] !== ci || rows.dc[i] > st.radio) continue;
+      meses[rows.m[i]]++;
+    }
+    const ad = antesDespues(meses);
+    const n = sumRange(meses, 0, 47);
+    const sitios = geo.sitios.filter((s) => s.corredor === corredor).length;
+    return {
+      corredor, ...ad, n, sitios,
+      tip: `<b>${corredor}</b> · ${sitios} sitio${sitios > 1 ? 's' : ''} de cámara<br>2019: ${fmtDec(ad.ma)} por mes · 2021–22: ${fmtDec(ad.md)} por mes<br>Cambio: <b>${pct(ad.cambio)}</b> · N = ${n.toLocaleString('es-CO')}<br><span class="muted">Siniestros a ≤ ${st.radio} m de las cámaras del corredor</span>`,
+    };
+  });
+}
+
+const pct = (v) => (v == null || !isFinite(v) ? '—' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(1).replace('.', ',')} %`);
+const fmtDec = (v) => (v == null || !isFinite(v) ? '—' : v.toFixed(1).replace('.', ','));

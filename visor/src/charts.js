@@ -255,3 +255,118 @@ export function meter(value, max, color) {
   const w = max > 0 ? Math.min(100, (100 * value) / max) : 0;
   return `<div class="meter"><div style="width:${w}%;background:${color}"></div></div>`;
 }
+
+// ---------------------------------------------------------------- dumbbell: cámara vs. control
+/**
+ * rows: [{ key, label, a, b, n, tip }]
+ * a = cambio de la zona con cámara (fracción), b = cambio del control (fracción).
+ * Se usa en el panorama para los tres niveles de gravedad.
+ */
+export function dumbbell(el, rows, { selected, onSelect } = {}) {
+  el.innerHTML = '';
+  if (!rows.length) return;
+  const W = el.clientWidth || 560;
+  const rowH = 44;
+  const m = { t: 26, r: 18, b: 32, l: 158 };
+  const H = m.t + rows.length * rowH + m.b;
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'dumbbell');
+  const vals = rows.flatMap((r) => [r.a, r.b]).filter((v) => v != null);
+  const [lo, hi] = d3.extent([...vals, 0]);
+  const pad = Math.max(0.04, (hi - lo) * 0.18);
+  const x = d3.scaleLinear([lo - pad, hi + pad], [m.l, W - m.r]).nice(4);
+
+  svg.append('g').attr('class', 'grid').selectAll('line').data(x.ticks(4)).join('line')
+    .attr('x1', x).attr('x2', x).attr('y1', m.t - 8).attr('y2', H - m.b);
+  svg.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0))
+    .attr('y1', m.t - 8).attr('y2', H - m.b);
+
+  const rowsG = svg.append('g').selectAll('g').data(rows).join('g')
+    .attr('class', (r) => `db-row${r.key === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
+    .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
+  rowsG.append('rect').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
+    .attr('rx', 4).attr('fill', (r) => (r.key === selected ? 'var(--soft)' : 'transparent'));
+  rowsG.append('text').attr('class', 'db-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
+    .attr('text-anchor', 'end').text((r) => r.label);
+  rowsG.append('text').attr('class', 'db-n').attr('x', m.l - 12).attr('y', rowH / 2 + 18)
+    .attr('text-anchor', 'end').text((r) => (r.n == null ? '' : `N = ${fmt.int(r.n)}`));
+  rowsG.append('line').attr('class', 'db-link')
+    .attr('x1', (r) => x(r.a)).attr('x2', (r) => x(r.b))
+    .attr('y1', rowH / 2).attr('y2', rowH / 2);
+  rowsG.append('circle').attr('class', 'db-dot cam')
+    .attr('cx', (r) => x(r.a)).attr('cy', rowH / 2).attr('r', 5)
+    .attr('fill', C.cam);
+  rowsG.append('circle').attr('class', 'db-dot ctrl')
+    .attr('cx', (r) => x(r.b)).attr('cy', rowH / 2).attr('r', 5)
+    .attr('fill', C.ctrl);
+  rowsG.append('rect').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
+    .attr('fill', 'transparent')
+    .on('mousemove', (ev, r) => showTip(r.tip, ev))
+    .on('mouseleave', hideTip)
+    .on('click', (_, r) => onSelect?.(r.key));
+
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(4).tickFormat((v) => fmt.pct(v)).tickSize(3))
+    .call((g) => g.select('.domain').attr('stroke', C.grid));
+  if (onSelect) svg.style('cursor', 'pointer');
+}
+
+// ---------------------------------------------------------------- dot plot por corredor
+/**
+ * rows: [{ corredor, value, n, antes, despues, ma, md, tip }]
+ * value = cambio de la zona con cámara del corredor (fracción).
+ * control = cambio del control de la ciudad (fracción) para la línea de referencia.
+ */
+export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
+  el.innerHTML = '';
+  if (!rows.length) return;
+  const W = el.clientWidth || 760;
+  const rowH = 25;
+  const m = { t: 30, r: 54, b: 34, l: 168 };
+  const H = m.t + rows.length * rowH + m.b;
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'corridor-dots');
+  const vals = rows.map((r) => r.value).filter((v) => v != null);
+  if (control != null) vals.push(control);
+  vals.push(0);
+  const [lo, hi] = d3.extent(vals);
+  const pad = Math.max(0.04, (hi - lo) * 0.14);
+  const x = d3.scaleLinear([lo - pad, hi + pad], [m.l, W - m.r]).nice(4);
+
+  svg.append('g').attr('class', 'grid').selectAll('line').data(x.ticks(4)).join('line')
+    .attr('x1', x).attr('x2', x).attr('y1', m.t - 10).attr('y2', H - m.b);
+  svg.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0))
+    .attr('y1', m.t - 10).attr('y2', H - m.b);
+  if (control != null) {
+    svg.append('line').attr('class', 'control-line').attr('x1', x(control)).attr('x2', x(control))
+      .attr('y1', m.t - 18).attr('y2', H - m.b);
+    svg.append('text').attr('class', 'control-label')
+      .attr('x', x(control)).attr('y', m.t - 24)
+      .attr('text-anchor', x(control) > W * 0.72 ? 'end' : 'start')
+      .text(`control ciudad ${fmt.pct(control)}`);
+  }
+
+  const g = svg.append('g').selectAll('g').data(rows).join('g')
+    .attr('class', (r) => `cd-row${r.corredor === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
+    .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
+  g.append('rect').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
+    .attr('rx', 4).attr('fill', (r) => (r.corredor === selected ? 'var(--soft)' : 'transparent'));
+  g.append('text').attr('class', 'cd-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
+    .attr('text-anchor', 'end').text((r) => r.corredor);
+  g.append('circle').attr('class', 'cd-dot')
+    .attr('cx', (r) => x(r.value)).attr('cy', rowH / 2)
+    .attr('r', (r) => (r.corredor === selected ? 6 : 4.5))
+    .attr('fill', (r) => (r.corredor === selected ? C.despues : C.cam));
+  g.append('text').attr('class', 'cd-n').attr('x', W - m.r + 10).attr('y', rowH / 2 + 4)
+    .text((r) => fmt.int(r.n));
+  g.append('rect').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
+    .attr('fill', 'transparent')
+    .on('mousemove', (ev, r) => showTip(r.tip, ev))
+    .on('mouseleave', hideTip)
+    .on('click', (_, r) => onSelect?.(r.corredor));
+
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(4).tickFormat((v) => fmt.pct(v)).tickSize(3))
+    .call((g) => g.select('.domain').attr('stroke', C.grid));
+  svg.append('text').attr('class', 'cd-hint').attr('x', W - m.r + 10).attr('y', m.t - 24)
+    .attr('text-anchor', 'end').text('N');
+  if (onSelect) svg.style('cursor', 'pointer');
+}
