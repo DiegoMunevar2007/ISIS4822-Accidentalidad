@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cámaras salvavidas · Bogotá</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2212%22 fill=%22%23fffdf9%22 stroke=%22%231f1d1a%22 stroke-width=%223%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%225%22 fill=%22%23c8372c%22/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- ============ Landing ============ -->
+  <section id="landing" class="landing" hidden>
+    <div class="landing-card">
+      <p class="eyebrow">ISIS4822 · Visualización · Bogotá 2019–2022</p>
+      <h1>¿Las cámaras salvavidas<br />realmente salvan vidas?</h1>
+      <p class="lede">
+        Entre noviembre de 2019 y marzo de 2020 Bogotá instaló <strong>92 cámaras</strong> en <strong>40 sitios</strong>
+        de 18 corredores. Este visor cruza <strong>109.137 siniestros</strong>, sus víctimas y la velocidad del tráfico
+        para comparar lo que pasó <em>antes</em> y <em>después</em> cerca de las cámaras, y contra vías similares sin cámara.
+      </p>
+      <ol class="steps">
+        <li><span>1</span><div><strong>Selecciona</strong> un corredor o un sitio de cámara (en el mapa o en el menú).</div></li>
+        <li><span>2</span><div><strong>Filtra</strong> por periodo, gravedad, tipo de siniestro, actor y radio alrededor de la cámara.</div></li>
+        <li><span>3</span><div><strong>Compara</strong> antes/después, contra zonas de control o dos meses lado a lado (A/B).</div></li>
+      </ol>
+      <div class="landing-actions">
+        <button class="btn primary" id="btn-tour">Recorrido guiado (1 min)</button>
+        <button class="btn" id="btn-skip">Ir directo al visor</button>
+      </div>
+      <p class="fineprint">Fuentes: SDM (siniestros georreferenciados y anuarios SIGAT), inventario Cámaras Salvavidas, Bitcarrier (velocidades). Los cambios son descriptivos; no prueban un efecto causal.</p>
+    </div>
+  </section>
+
+  <!-- ============ App ============ -->
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Cámaras salvavidas <span>· Bogotá</span></h1>
+        <p class="hint">Selecciona → filtra → compara.</p>
+      </div>
+      <div class="top-actions">
+        <button class="btn" id="btn-reset" title="Vuelve a la vista inicial">Reiniciar</button>
+        <button class="btn" id="btn-clear" title="Vuelve a Bogotá">Quitar selección</button>
+        <button class="btn icon" id="btn-help" title="Ver recorrido guiado" aria-label="Ayuda">?</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="mapa">Mapa y ficha</button>
+      <button role="tab" data-tab="serie">Serie</button>
+      <button role="tab" data-tab="ab">Meses A/B</button>
+    </nav>
+
+    <section class="filters" id="filters">
+      <label class="f f-corr">
+        <span>Corredor</span>
+        <select id="sel-corredor"></select>
+      </label>
+      <label class="f f-sitio">
+        <span>Sitio de cámara</span>
+        <select id="sel-sitio"></select>
+      </label>
+      <div class="f f-periodo">
+        <span>Periodo</span>
+        <div class="seg" id="seg-periodo">
+          <button data-v="todo">Todo</button>
+          <button data-v="antes">Antes</button>
+          <button data-v="transicion">2020</button>
+          <button data-v="despues">Después</button>
+        </div>
+      </div>
+      <div class="f f-grav">
+        <span>Gravedad</span>
+        <div class="seg" id="seg-gravedad">
+          <button data-v="fatal">Con muertos</button>
+          <button data-v="grave">Heridos o muertos</button>
+          <button data-v="todos">Todos</button>
+        </div>
+      </div>
+      <details class="f f-more" id="more-filters">
+        <summary>Más filtros <b id="more-count"></b></summary>
+        <div class="more-body">
+          <div class="more-col">
+            <span>Tipo de siniestro</span>
+            <div class="chips" id="chips-clase"></div>
+          </div>
+          <label class="more-col">
+            <span>Actor involucrado</span>
+            <select id="sel-actor"></select>
+          </label>
+          <label class="more-col">
+            <span>Radio alrededor de la cámara: <b id="radio-val">500 m</b></span>
+            <input type="range" id="rng-radio" min="150" max="1000" step="50" value="500" />
+          </label>
+          <label class="more-col check">
+            <input type="checkbox" id="chk-cruce" />
+            <span>Excluir intersecciones ambiguas</span>
+          </label>
+        </div>
+      </details>
+      <div class="f f-ab" id="ab-controls">
+        <label><span class="tag a">A</span><select id="sel-mes-a"></select></label>
+        <button class="btn icon" id="btn-swap" title="Intercambiar A y B">⇄</button>
+        <label><span class="tag b">B</span><select id="sel-mes-b"></select></label>
+      </div>
+    </section>
+
+    <p class="scope" id="scope-line"></p>
+
+    <main class="stage" id="stage">
+      <section class="panel map-panel" id="panel-map">
+        <header class="panel-head">
+          <div>
+            <h2 id="map-title">Bogotá · mapa</h2>
+            <p class="sub" id="map-sub"></p>
+          </div>
+          <button class="btn small" id="btn-hide-map" title="Ocultar el mapa para ver más gráficas">Ocultar mapa</button>
+        </header>
+        <div id="map"></div>
+        <div class="legend" id="map-legend"></div>
+      </section>
+
+      <button class="map-rail" id="map-rail" title="Mostrar mapa" hidden>
+        <span>Mostrar mapa</span>
+      </button>
+
+      <section class="panel ficha-panel" id="panel-ficha"></section>
+      <section class="panel serie-panel" id="panel-serie"></section>
+      <section class="panel ab-panel" id="panel-ab"></section>
+    </main>
+
+    <footer class="foot">
+      Antes = 2019 · 2020 = instalación y pandemia · Después = 2021–2022. Las cámaras multan desde mayo de 2020.
+      Los sitios se eligieron por ser críticos (regresión a la media): compara siempre contra el control.
+    </footer>
+  </div>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+  <div id="tour" class="tour" hidden>
+    <div class="tour-hole" id="tour-hole"></div>
+    <div class="tour-card" id="tour-card">
+      <p class="tour-step" id="tour-step"></p>
+      <h3 id="tour-title"></h3>
+      <p id="tour-text"></p>
+      <div class="tour-actions">
+        <button class="btn small" id="tour-skip">Saltar</button>
+        <button class="btn small primary" id="tour-next">Siguiente</button>
+      </div>
+    </div>
+  </div>
+  <div id="loading" class="loading">Cargando 109.137 siniestros…</div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

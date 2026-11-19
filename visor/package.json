@@ -1,0 +1,19 @@
+{
+  "name": "visor-camaras-salvavidas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "datos": "python3 ../scripts/build_data.py",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "d3": "^7.9.2",
+    "leaflet": "1.9"
+  },
+  "devDependencies": {
+    "vite": "^6.4.6"
+  }
+}
