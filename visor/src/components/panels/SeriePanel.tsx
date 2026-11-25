@@ -39,6 +39,7 @@ const COL_ANIO: Record<number, string> = { 2019: C.antes, 2020: C.y2020, 2021: C
 interface Block {
   title: string
   sub: string
+  desc: string
   legend: ReactNode
   note: ReactNode
   main?: (el: HTMLDivElement) => void
@@ -75,6 +76,9 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         lab.push(`${['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'][dayDate(d).getDay()]} ${fmtDia(d)}`)
       }
     }
+    // Referencia para leer el cambio: el promedio de 2019 en la misma unidad (mes, semana o día).
+    const dias2019 = Array.from(K.dScope.slice(0, 365)).reduce((a, v) => a + v, 0) / 365
+    const base2019 = gran === 'mes' ? sumRange(K.mScope, 0, 11) / 12 : gran === 'semana' ? dias2019 * 7 : dias2019
     const yMax = Math.max(1, ...ys)
     const inR = xs.map((x) => x >= r[0] - 16 && x <= r[1] + 16)
     const gl = { mes: 'meses', semana: 'semanas', dia: 'días' }[gran]
@@ -86,6 +90,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     return {
       title: `Siniestros por ${{ mes: 'mes', semana: 'semana', dia: 'día' }[gran]}`,
       sub: `${fmtDia(r[0])} a ${fmtDia(r[1])}`,
+      desc: 'Muestra cómo cambian los siniestros con el tiempo y si hay un quiebre después de instalar las cámaras. La franja de abajo sirve para acercar un periodo.',
       legend: null,
       main: (el) => lineChart(el, {
         xs: xsIn,
@@ -95,9 +100,11 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         yLabel: ySiniestros(st),
         bands: bandas,
         vlines: [{ x: OPERACION, label: 'Multas desde may-2020', color: C.ink2, dash: true }],
+        refLines: base2019 > 0 ? [{ y: base2019, label: 'Promedio de 2019', solid: true }] : [],
         tooltip: (i: number) => {
           const k = xs.findIndex((x) => x === xsIn[i])
-          return `<b>${lab[k]}</b><br>${fmt.int(ys[k])} ${nLabel(st)}`
+          const dif = base2019 > 0 ? (ys[k] - base2019) / base2019 : null
+          return `<b>${lab[k]}</b><br>${fmt.int(ys[k])} ${nLabel(st)}${dif == null ? '' : `<br><span class="muted">${fmt.pct(dif)} frente al promedio de 2019</span>`}`
         },
         height: 260,
       }),
@@ -152,6 +159,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     return {
       title: 'Un año frente a otro',
       sub: 'Un recuadro por año, de enero a diciembre y con la misma escala',
+      desc: 'Permite comparar cada año con 2019, mes a mes, para ver si la forma del año cambió.',
       legend: <ChartLegend items={items} />,
       custom,
       note: null,
@@ -181,7 +189,8 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     ]
     return {
       title: 'Con cámara y sin cámara en el tiempo',
-      sub: 'Cada línea muestra los siniestros de cada mes como porcentaje del promedio mensual de 2019 (media móvil de 3 meses). 100 % es el nivel de 2019. Debajo, la diferencia entre las dos líneas.',
+      sub: 'Porcentaje del promedio mensual de 2019 (100 % = nivel de 2019), media móvil de 3 meses',
+      desc: 'Permite ver si los siniestros bajaron más cerca de las cámaras que en las vías sin cámara. Abajo, la diferencia entre ambas.',
       legend: (
         <ChartLegend items={items}>
           <div className="legend-toggle">
@@ -223,6 +232,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
           <Seg small id="seg-modo" value={st.serieModo} onChange={(serieModo) => set({ serieModo })} options={modos} />
         </div>
       </header>
+      <p className="sub desc mb-2">{blk.desc}</p>
       <div id="s-legend">{blk.legend}</div>
       {blk.custom ?? <Chart id="s-main" draw={blk.main!} />}
       {blk.context ? <Chart id="s-context" draw={blk.context} /> : <div id="s-context" className="chart" />}
@@ -240,16 +250,17 @@ function Velocidad({ K: _K }: { K: Computed }) {
   const v = velocidadDelAmbito(D, st)
   const xs = [...Array(N_MESES).keys()]
 
+  const desc = <p className="sub desc">Permite ver si el tráfico circula más lento donde hay cámara, frente a los tramos sin ella.</p>
   const heading = (sub: string) => <h3 className="sec">Velocidad del tráfico <span id="v-sub">{sub}</span></h3>
 
   if (!v || (v.cam.n === 0 && v.sin.n === 0)) {
-    return <>{heading('')}<div id="v-chart" className="chart"><p className="muted">No existe información de velocidad para este corredor.</p></div></>
+    return <>{heading('')}{desc}<div id="v-chart" className="chart"><p className="muted">No existe información de velocidad para este corredor.</p></div></>
   }
   const series: any[] = []
   if (v.cam.n) series.push({ key: 'c', label: 'Con cámara', color: C.cam, ys: v.cam.p85 })
   if (v.sin.n) series.push({ key: 's', label: 'Sin cámara', color: C.ctrl, dash: true, ys: v.sin.p85 })
   if (!series.length) {
-    return <>{heading('')}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
+    return <>{heading('')}{desc}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
   }
   const vals = series.flatMap((s) => s.ys.filter((x: number | null) => x != null)) as number[]
   const sub = `P85 mensual en km/h, Bitcarrier, ${v.fuente === 'bogota' ? 'todos los tramos medidos' : v.fuente === 'sitio' ? 'tramos junto a este sitio vs. resto de la vía' : 'tramos de la vía con y sin cámara'}${st.velModo === 'cam' ? ', solo con cámara' : st.velModo === 'sin' ? ', solo sin cámara' : ''}`
@@ -260,6 +271,7 @@ function Velocidad({ K: _K }: { K: Computed }) {
   return (
     <>
       {heading(sub)}
+      {desc}
       <div className="serie-subhead">
         <div id="v-legend" className="flex-1"><ChartLegend items={items} /></div>
       </div>

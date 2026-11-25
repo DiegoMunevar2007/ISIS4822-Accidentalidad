@@ -2,7 +2,7 @@ import { ANIOS, PERIODOS, antesDespues, sitiosDelAmbito, sumRange } from '@/data
 import { C, annualBars, fmt } from '@/charts.js'
 import { useStore } from '@/store'
 import { gravLabel, nLabel, nombreZona, ySiniestros, type Computed } from '@/lib/derived'
-import { Info } from 'lucide-react'
+import { Cctv, Info, VideoOff } from 'lucide-react'
 import { Chart } from '@/components/charts/Chart'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ChangeBars, PairedBars } from '@/components/charts/bits'
@@ -39,16 +39,16 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
       <div id="f-ad">
         <h3 className="sec first">Con cámara y sin cámara</h3>
         <p className="sub desc">
-          Compara el cambio del promedio mensual de {gravLabel(st)} entre 2019 y 2021–22 a menos de {st.radio} m de una cámara y en las vías de la ciudad que quedan a más de esa distancia. Estas últimas son la referencia (el control): muestran cómo cambió el resto de la ciudad.
+          Permite ver si los {nLabel(st)} bajaron más cerca de las cámaras (a menos de {st.radio} m) que en las vías sin cámara, que sirven de referencia. Compara 2019 con 2021–22.
         </p>
         <ChangeBars
           rows={[
             {
-              label: zona, cambio: zonaAD.cambio, color: C.despues, detail: `de ${fmt.dec(zonaAD.ma)} a ${fmt.dec(zonaAD.md)} ${nLabel(st)} por mes`,
+              icon: Cctv, label: zona, cambio: zonaAD.cambio, color: C.despues, bajo: zonaAD.antes + zonaAD.despues < 30, detail: `de ${fmt.dec(zonaAD.ma)} a ${fmt.dec(zonaAD.md)} ${nLabel(st)} por mes`,
               tip: `<b>${zona}</b><br>2019: ${fmt.int(zonaAD.antes)} ${nLabel(st)} (${fmt.dec(zonaAD.ma)} por mes)<br>2021–22: ${fmt.int(zonaAD.despues)} ${nLabel(st)} (${fmt.dec(zonaAD.md)} por mes)`,
             },
             {
-              label: `Vías sin cámara (a más de ${st.radio} m)`, cambio: ctrlAD.cambio, color: C.ctrl, detail: `de ${fmt.dec(ctrlAD.ma)} a ${fmt.dec(ctrlAD.md)} ${nLabel(st)} por mes`,
+              icon: VideoOff, label: `Vías sin cámara (a más de ${st.radio} m)`, cambio: ctrlAD.cambio, color: C.ctrl, detail: `de ${fmt.dec(ctrlAD.ma)} a ${fmt.dec(ctrlAD.md)} ${nLabel(st)} por mes`,
               tip: `<b>Vías sin cámara</b> (control: tramos Bitcarrier de toda la ciudad sin cámara cerca)<br>2019: ${fmt.int(ctrlAD.antes)} ${nLabel(st)} (${fmt.dec(ctrlAD.ma)} por mes)<br>2021–22: ${fmt.int(ctrlAD.despues)} ${nLabel(st)} (${fmt.dec(ctrlAD.md)} por mes)`,
             },
           ]}
@@ -64,7 +64,7 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
       <h3 className="sec">
         Siniestros por año <span>N = {fmt.int(N)} en {years.length} año{years.length > 1 ? 's' : ''}</span>
       </h3>
-      <p className="sub desc">Total de {gravLabel(st)} cada año en el ámbito. 2020 queda aparte por la pandemia y la instalación.</p>
+      <p className="sub desc">Permite ver cuántos {nLabel(st)} hubo cada año. 2020 va aparte por la pandemia y la instalación.</p>
       <Chart
         id="f-anual"
         draw={(el) =>
@@ -79,7 +79,7 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
       <h3 className="sec">
         Víctimas por condición
       </h3>
-      <p className="sub desc">Promedio mensual de víctimas por tipo de usuario, antes y después de la instalación.</p>
+      <p className="sub desc">Permite ver qué tipo de usuario pone más víctimas y cómo cambió tras la instalación.</p>
       <div className="legend-inline">
         <span><i style={{ background: C.antes }} />2019</span>
         <span><i style={{ background: C.despues }} />2021–22</span>

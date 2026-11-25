@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore, setState } from '@/store'
 import { useUi } from '@/ui-store'
 import { Button } from '@/components/ui/button'
@@ -16,20 +16,20 @@ interface Step {
 const STEPS: Step[] = [
   { sel: '#tabs', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Las vistas',
     text: '«Mapa y cambios» muestra dónde están las cámaras y qué cambió con ellas; «Evolución» muestra la serie mes a mes; «Corredores» ordena los corredores por cambio; «Comparar meses» pone dos meses lado a lado.' },
-  { sel: '#panel-map', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Elegir en el mapa',
+  { sel: '#map', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Elegir en el mapa',
     text: 'Cada círculo es un sitio de cámara. Con el cursor encima se ve cuántos siniestros tiene cerca, y un clic lo selecciona. Los tramos del corredor también admiten clic.' },
   { sel: '.f-corr', before: () => setState({ tab: 'mapa', corredor: 'Av. Boyacá', sitio: null }), title: 'O desde el menú',
     text: 'Se eligió Av. Boyacá como ejemplo. El menú de al lado permite bajar a un sitio de cámara.' },
   { sel: '#scope-line', title: '¿Qué se está contando?',
     text: 'Aquí se resume el alcance: sitios y cámaras del ámbito, el radio alrededor de cada cámara y los filtros de «Más filtros». Se cuentan los siniestros dentro de ese radio, no toda la vía.' },
-  { sel: '.f-periodo', before: () => setState({ tab: 'mapa' }), title: 'Filtrar',
+  { sel: '#filters', before: () => setState({ tab: 'mapa' }), title: 'Filtrar',
     text: 'Periodo (antes de la instalación: 2019; instalación y pandemia: 2020; después: 2021–22) y gravedad. En «Más filtros» están el tipo de siniestro, el actor (moto, peatón…), el radio y las intersecciones ambiguas.' },
   { sel: '#panel-ficha', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Con y sin cámara',
     text: 'El panel compara el promedio mensual antes y después en la zona con cámara y en las vías sin cámara, que sirven de referencia (el control). La diferencia en puntos porcentuales es el dato principal.' },
   { sel: '#btn-hide-map', title: 'Ocultar el mapa',
     text: 'Al ocultar el mapa, los cambios y la serie quedan lado a lado. El mapa se vuelve a mostrar desde la barra lateral.' },
   { sel: '#panel-serie', before: () => setState({ tab: 'serie', mapa: false, serieModo: 'anios' }), title: 'Evolución',
-    text: 'Con el cursor sobre la serie se ve cada mes. «Años superpuestos» dibuja un año sobre otro, «Con y sin cámara» compara los dos grupos frente al nivel de 2019 y, abajo, está la velocidad del tráfico.' },
+    text: 'Con el cursor sobre la serie se ve cada mes. «Años superpuestos» pone un recuadro por año, con 2019 de referencia, «Con y sin cámara» compara los dos grupos frente al nivel de 2019 y, abajo, está la velocidad del tráfico.' },
   { sel: '#panel-ab', before: () => setState({ tab: 'ab' }), title: 'Comparar meses',
     text: 'Las bandas A y B se arrastran sobre el gráfico, o por sus bordes, para elegir los meses de cada una. La tabla compara el promedio mensual de siniestros, víctimas y velocidad entre ambas.' },
 ]
@@ -51,6 +51,7 @@ export function Tour() {
   const k = useUi((s) => s.tourStep)
   const [pos, setPos] = useState<Pos | null>(null)
   const [tick, setTick] = useState(0)
+  const cardRef = useRef<HTMLDivElement>(null)
   const step = STEPS[k]
 
   // Ejecuta el `before` del paso una sola vez por paso
@@ -58,7 +59,8 @@ export function Tour() {
     if (active) step.before?.()
   }, [active, k, step])
 
-  // Mide el elemento destacado (tras el render del estado nuevo)
+  // Mide el elemento destacado (tras el render del estado nuevo). El desplazamiento es inmediato:
+  // medir mientras la página sigue moviéndose dejaba el recuadro desfasado.
   useEffect(() => {
     if (!active) return
     const t = setTimeout(() => {
@@ -68,19 +70,36 @@ export function Tour() {
         else useUi.setState({ tourStep: k + 1 })
         return
       }
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      const alto = el.getBoundingClientRect().height
+      el.scrollIntoView({ block: alto > vh * 0.7 ? 'start' : 'center', behavior: 'instant' as ScrollBehavior })
       const r = el.getBoundingClientRect()
       const pad = 6
-      const cw = Math.min(380, window.innerWidth - 24)
-      const below = r.bottom + 12 + 220 < window.innerHeight
-      const left = Math.min(Math.max(12, r.left), window.innerWidth - cw - 12)
-      let top = below ? r.bottom + 12 : Math.max(12, r.top - 232)
-      if (r.height > window.innerHeight * 0.6) top = Math.min(r.top + 24, window.innerHeight - 250)
+      const m = 12
+      // Parte visible del elemento
+      const hole = {
+        left: Math.max(m / 2, r.left - pad),
+        top: Math.max(m / 2, r.top - pad),
+        right: Math.min(vw - m / 2, r.right + pad),
+        bottom: Math.min(vh - m / 2, r.bottom + pad),
+      }
+      const cw = Math.min(380, vw - 2 * m)
+      const ch = cardRef.current?.offsetHeight ?? 260
+      // La tarjeta va donde no tape lo destacado: debajo, arriba, a la derecha o a la izquierda.
+      const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
+      const opciones = [
+        { ok: hole.bottom + m + ch <= vh, left: clamp(hole.left, m, vw - cw - m), top: hole.bottom + m },
+        { ok: hole.top - m - ch >= 0, left: clamp(hole.left, m, vw - cw - m), top: hole.top - m - ch },
+        { ok: hole.right + m + cw <= vw, left: hole.right + m, top: clamp(hole.top, m, vh - ch - m) },
+        { ok: hole.left - m - cw >= 0, left: hole.left - m - cw, top: clamp(hole.top, m, vh - ch - m) },
+      ]
+      const e = opciones.find((o) => o.ok) ?? { left: clamp(hole.left, m, vw - cw - m), top: vh - ch - m }
       setPos({
-        hole: { left: r.left - pad, top: r.top - pad, width: r.width + pad * 2, height: Math.min(r.height + pad * 2, window.innerHeight - 20) },
-        card: { left, top, width: cw },
+        hole: { left: hole.left, top: hole.top, width: hole.right - hole.left, height: hole.bottom - hole.top },
+        card: { left: e.left, top: e.top, width: cw },
       })
-    }, 60)
+    }, 80)
     return () => clearTimeout(t)
   }, [active, k, step, tick])
 
@@ -89,9 +108,11 @@ export function Tour() {
     const onResize = () => setTick((n) => n + 1)
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && endTour()
     window.addEventListener('resize', onResize)
+    window.addEventListener('scroll', onResize, { passive: true })
     document.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('resize', onResize)
+      window.removeEventListener('scroll', onResize)
       document.removeEventListener('keydown', onKey)
     }
   }, [active])
@@ -101,7 +122,7 @@ export function Tour() {
   return (
     <div id="tour" className="tour">
       <div className="tour-hole" style={pos?.hole} />
-      <Card className="tour-card gap-3 px-5 py-5" role="dialog" aria-label="Recorrido guiado" style={pos?.card}>
+      <Card ref={cardRef} className="tour-card gap-3 px-5 py-5" role="dialog" aria-label="Recorrido guiado" style={pos?.card}>
         <div className="flex items-center gap-2">
           <span className="text-small font-semibold text-primary">Recorrido</span>
           <span className="text-small text-muted-foreground">Paso {k + 1} de {STEPS.length}</span>

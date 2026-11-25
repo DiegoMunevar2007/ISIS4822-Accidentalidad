@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { C, fmt, showTip, hideTip } from '@/charts.js'
 
 export interface LegendItem {
@@ -83,6 +84,9 @@ export interface ChangeRow {
   color: string
   detail: string
   tip?: string
+  icon?: LucideIcon
+  /** Pocos casos: la barra se dibuja con trama, igual que en la lista de corredores. */
+  bajo?: boolean
 }
 
 /** Cambio porcentual de varias filas en una misma escala, con barras que parten de cero. */
@@ -93,10 +97,10 @@ export function ChangeBars({ rows }: { rows: ChangeRow[] }) {
       {rows.map((r) => {
         const w = r.cambio == null ? 0 : (Math.abs(r.cambio) / mx) * 50
         return (
-          <div key={r.label} className="cb-row" onMouseMove={r.tip ? (ev) => showTip(r.tip, ev.nativeEvent) : undefined} onMouseLeave={hideTip}>
+          <div key={r.label} className={`cb-row${r.bajo ? ' low' : ''}`} onMouseMove={r.tip ? (ev) => showTip(r.tip, ev.nativeEvent) : undefined} onMouseLeave={hideTip}>
             <div className="cb-label">
-              {r.label}
-              <small>{r.detail}</small>
+              <span className="flex items-center gap-1.5">{r.icon && <r.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />}{r.label}</span>
+              <small>{r.detail}{r.bajo ? ', pocos casos' : ''}</small>
             </div>
             <div className="cb-track" aria-hidden="true">
               <i style={{ background: r.color, ...((r.cambio ?? 0) < 0 ? { right: '50%' } : { left: '50%' }), width: `${w}%` }} />

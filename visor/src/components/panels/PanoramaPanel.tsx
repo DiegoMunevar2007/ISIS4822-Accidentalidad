@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MESES_CORTOS, cambioPorCorredor, cambioPorGravedad, velocidadGravedadPorCorredor, mesLabel } from '@/data.js'
 import { C, fmt, hideTip, lineChart, showTip, speedSeverityScatter } from '@/charts.js'
 import { useStore } from '@/store'
-import { gravLabel } from '@/lib/derived'
+import { gravLabel, nLabel } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
 import { Button } from '@/components/ui/button'
 import { Seg } from '@/components/ui/seg'
@@ -55,8 +55,7 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
         <div>
           <h2 className="pan-title">Cambio por corredor</h2>
           <p className="sub desc">
-            Muestra en qué corredores el cambio de {gravLabel(st)} entre 2019 y 2021–22 fue mayor o menor que en las vías sin cámara (el control), a menos de {st.radio} m de las cámaras. Cada barra es el cambio del corredor menos el de esas vías.
-            Un clic en un corredor muestra su detalle y lo ubica en el mapa. Diferencia de toda la zona con cámara: {pp(difGlobal)}
+            Permite ver en qué corredores los {nLabel(st)} bajaron más que en las vías sin cámara. Cada barra es el cambio del corredor menos el de esas vías, entre 2019 y 2021–22. Toda la zona con cámara: {pp(difGlobal)}.
           </p>
         </div>
       </div>
@@ -98,6 +97,7 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
                       {c.corredor}
                       <small>{bajo ? `${c.n} casos (pocos)` : `${c.n} casos`}</small>
                     </span>
+                    <Mini meses={c.meses} />
                     <span className="pan-bar" aria-hidden="true">
                       <i style={c.dif < 0 ? { right: '50%', width: `${w}%` } : { left: '50%', width: `${w}%` }} />
                     </span>
@@ -117,12 +117,27 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
       <details className="pan-more" id="pan-vel-wrap">
         <summary>Velocidad y gravedad por corredor</summary>
         <p className="note">
-          Cada punto es un corredor. La velocidad es la P85 de los tramos con cámara y la gravedad, la proporción de siniestros con muertos a menos de {st.radio} m.
-          No mide exposición: un corredor con más tráfico puede tener más casos.
+          Permite ver si los corredores más rápidos son también los más graves. Cada punto es un corredor: velocidad P85 de los tramos con cámara frente a la proporción de siniestros con muertos a menos de {st.radio} m.
         </p>
         <Chart id="pan-vel" draw={(el) => speedSeverityScatter(el, velGrav, { selected: sel?.corredor, onSelect: elegir })} />
       </details>
     </section>
+  )
+}
+
+/** Miniatura de la evolución mensual de un corredor (escala propia: muestra la forma, no el tamaño). */
+function Mini({ meses }: { meses: ArrayLike<number> }) {
+  const w = 104, h = 26
+  const n = meses.length
+  const mx = Math.max(1, ...Array.from(meses))
+  const x = (i: number) => 1 + (i / (n - 1)) * (w - 2)
+  const y = (v: number) => h - 2 - (v / mx) * (h - 4)
+  const d = Array.from(meses).map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('')
+  return (
+    <svg className="pan-mini" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      <rect x={x(10.6)} width={x(14.9) - x(10.6)} y="0" height={h} fill="#F2D98A" opacity="0.6" />
+      <path d={d} fill="none" stroke="#B5283A" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -157,7 +172,8 @@ function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
           )}
         </div>
         <div>
-          <p className="mb-1 text-small font-semibold">Siniestros por mes en el corredor</p>
+          <p className="text-small font-semibold">Siniestros por mes en el corredor</p>
+          <p className="mb-1 text-small text-muted-foreground">Permite ver si el corredor cambió tras la instalación.</p>
           <Chart
             draw={(el) =>
               lineChart(el, {

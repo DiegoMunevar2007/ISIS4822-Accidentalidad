@@ -54,7 +54,7 @@ const PointsLayer = L.Layer.extend({
         cuenta.set(k, v);
         if (v > max) max = v;
       }
-      const rampa = interpolateRgb('#dbe9ec', '#0b5c6b');
+      const rampa = interpolateRgb('#F7EBC3', '#B5283A');
       for (const [k, v] of cuenta) {
         ctx.fillStyle = rampa(Math.sqrt(v / max));
         ctx.globalAlpha = 0.35 + 0.6 * Math.sqrt(v / max);
@@ -63,7 +63,7 @@ const PointsLayer = L.Layer.extend({
       ctx.globalAlpha = 1;
     }
     // Dibujar en orden de gravedad para que los fatales queden encima
-    const colors = ['rgba(150,156,162,0.45)', 'rgba(111,163,173,0.6)', 'rgba(11,92,107,0.92)'];
+    const colors = ['rgba(150,156,162,0.45)', 'rgba(232,161,0,0.7)', 'rgba(200,16,46,0.92)'];
     for (let level = densidad ? 2 : 0; level <= 2; level++) {
       ctx.fillStyle = colors[level];
       ctx.beginPath();

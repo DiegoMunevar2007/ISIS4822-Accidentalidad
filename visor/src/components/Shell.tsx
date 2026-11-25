@@ -83,16 +83,17 @@ export function ScopeLine({ K: _K }: { K: Computed }) {
   const clases = st.clases.size === D.meta.clases.length ? null : [...st.clases].map((c) => CLASE_LABEL[c as keyof typeof CLASE_LABEL]).join(', ')
   const actor = st.actor ? (ACTORES.find((a: string[]) => a[0] === st.actor) as string[])[1] : null
 
-  const items: [string | null, string][] = [
+  type Item = [string | null, string]
+  const items: Item[] = [
     [null, `${sitios.length} sitio${sitios.length === 1 ? '' : 's'}`],
     [null, `${nCam} cámara${nCam === 1 ? '' : 's'}`],
     ...(st.corredor && !st.sitio && st.todoCorredor
-      ? ([['Corredor', `a menos de ${TRAMO_BUFFER_M} m del tramo`]] as [string, string][])
-      : ([['Radio', `${st.radio} m`]] as [string, string][])),
-    ...(st.tab === 'panorama' ? ([['Periodo', '2019 frente a 2021–22']] as [string, string][]) : []),
-    ...(clases ? ([['Tipo', clases]] as [string, string][]) : []),
-    ...(actor ? ([['Actor', actor]] as [string, string][]) : []),
-    ...(st.excluirCruce ? ([[null, 'Sin intersecciones ambiguas']] as [null, string][]) : []),
+      ? ([['Corredor', `a menos de ${TRAMO_BUFFER_M} m del tramo`]] as Item[])
+      : ([['Radio', `${st.radio} m`]] as Item[])),
+    ...(st.tab === 'panorama' ? ([['Periodo', '2019 frente a 2021–22']] as Item[]) : []),
+    ...(clases ? ([['Tipo', clases]] as Item[]) : []),
+    ...(actor ? ([['Actor', actor]] as Item[]) : []),
+    ...(st.excluirCruce ? ([[null, 'Sin intersecciones ambiguas']] as Item[]) : []),
   ]
 
   return (

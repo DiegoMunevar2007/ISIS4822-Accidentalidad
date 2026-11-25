@@ -88,7 +88,7 @@ export function MapPanel({ K, visible }: { K: Computed; visible: boolean }) {
           Ocultar mapa
         </Button>
       </header>
-      <div className="relative">
+      <div className="map-frame relative">
         <div id="map" ref={elRef} />
         {(st.corredor || st.sitio) && (
           <div className="absolute bottom-8 right-3 z-[1000] flex flex-col-reverse items-end gap-2">
@@ -118,8 +118,8 @@ export function MapPanel({ K, visible }: { K: Computed; visible: boolean }) {
           <h3>Siniestros</h3>
           <ul>
             <li><i className="lg-ramp" />Densidad, con poco zoom (más oscuro, más siniestros)</li>
-            <li><i className="lg-dot" style={{ background: '#0b5c6b' }} />Con muertos</li>
-            {gravs <= 1 && <li><i className="lg-dot" style={{ background: '#6fa3ad' }} />Con heridos</li>}
+            <li><i className="lg-dot" style={{ background: '#B5283A' }} />Con muertos</li>
+            {gravs <= 1 && <li><i className="lg-dot" style={{ background: '#E8A100' }} />Con heridos</li>}
             {gravs === 0 && <li><i className="lg-dot" style={{ background: '#a9aeb3' }} />Solo daños</li>}
           </ul>
         </div>

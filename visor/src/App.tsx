@@ -42,6 +42,7 @@ export function App() {
 
   return (
     <>
+      <div className="flag-bar" aria-hidden="true" />
       <div id="app" className="app">
         <TopBar />
         <Tabs />

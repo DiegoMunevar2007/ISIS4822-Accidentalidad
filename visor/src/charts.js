@@ -9,14 +9,14 @@ export const C = {
   surface: '#ffffff', // halo/gap sobre paneles
   neutral: '#cfcfca', // barra 2020 / neutro
   antes: '#6b7178', // antes / A: gris
-  despues: '#0b5c6b', // después / B / foco: único acento
+  despues: '#B5283A', // después / B / foco: rojo de la bandera de Bogotá
   y2020: '#b3b3ac',
-  y2021: '#5f9aa5',
-  y2022: '#0b5c6b',
-  cam: '#0b5c6b',
+  y2021: '#D9959F',
+  y2022: '#B5283A',
+  cam: '#B5283A',
   ctrl: '#7a8087',
-  fatal: '#0b5c6b',
-  grave: '#6fa3ad',
+  fatal: '#B5283A',
+  grave: '#E8A100',
   dano: '#a9aeb3',
 };
 
@@ -146,7 +146,7 @@ export function lineChart(el, o) {
     .attr('text-anchor', 'middle').text(o.xLabel);
 
   for (const r of o.refLines ?? []) {
-    svg.append('line').attr('class', 'refline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r.y)).attr('y2', y(r.y));
+    svg.append('line').attr('class', r.solid ? 'refline solid' : 'refline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r.y)).attr('y2', y(r.y));
     svg.append('text').attr('class', 'band-label').attr('x', W - m.r - 4).attr('y', y(r.y) - 4).attr('text-anchor', 'end').text(r.label);
   }
   for (const v of o.vlines ?? []) {
@@ -265,7 +265,7 @@ export function monthBars(el, o) {
   }
 
   // Pasar el cursor por cualquier mes muestra su valor
-  const cross = svg.append('rect').attr('fill', 'rgba(11,92,107,0.10)').attr('y', top).attr('height', alto).style('opacity', 0).attr('pointer-events', 'none');
+  const cross = svg.append('rect').attr('fill', 'rgba(200,16,46,0.08)').attr('y', top).attr('height', alto).style('opacity', 0).attr('pointer-events', 'none');
   const indice = (ev) => Math.max(0, Math.min(n - 1, Math.floor((d3.pointer(ev, svg.node())[0] - m.l) / step)));
   const hover = (ev) => {
     const i = indice(ev);
@@ -429,7 +429,7 @@ export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
     .attr('x', (d, i) => x(monthStartDay[i]) + 0.5)
     .attr('width', (d, i) => Math.max(1, x(monthStartDay[i + 1] ?? 1461) - x(monthStartDay[i]) - 1))
     .attr('y', (d) => y(d)).attr('height', (d) => y(0) - y(d))
-    .attr('fill', (d, i) => (i < 12 ? '#9aa0a6' : i < 24 ? '#d9d9d4' : '#5f9aa5'));
+    .attr('fill', (d, i) => (i < 12 ? '#9aa0a6' : i < 24 ? '#d9d9d4' : '#D9959F'));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).tickValues([0, 365, 731, 1096]).tickSize(3).tickFormat((d, i) => 2019 + i))
     .call((g) => g.select('.domain').attr('stroke', C.grid));

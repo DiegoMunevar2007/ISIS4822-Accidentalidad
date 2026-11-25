@@ -7,7 +7,6 @@ import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/compon
 import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
-import { cuantosMeses, etiquetaMeses } from '@/lib/grupos'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const GRAVEDADES = [
@@ -86,21 +85,6 @@ export function Filters() {
           </Button>
         </PopoverTrigger>
       </div>
-      {st.tab === 'ab' && (
-        <div className="f f-ab ml-auto flex flex-row items-end gap-2 max-[1000px]:ml-0" id="ab-controls">
-          <div className="flex items-center gap-1.5 text-small">
-            <span className="tag a">A</span>
-            <span className="max-w-[220px] truncate">{etiquetaMeses(st.mesesA)}</span>
-            <span className="text-muted-foreground">({cuantosMeses(st.mesesA)})</span>
-          </div>
-          <Button size="icon" id="btn-swap" title="Intercambiar A y B" onClick={() => set({ mesesA: st.mesesB, mesesB: st.mesesA })}>⇄</Button>
-          <div className="flex items-center gap-1.5 text-small">
-            <span className="tag b">B</span>
-            <span className="max-w-[220px] truncate">{etiquetaMeses(st.mesesB)}</span>
-            <span className="text-muted-foreground">({cuantosMeses(st.mesesB)})</span>
-          </div>
-        </div>
-      )}
     </section>
     </PopoverAnchor>
     <PopoverContent align="start" className="grid w-[var(--radix-popover-trigger-width)] grid-cols-1 gap-3.5 sm:grid-cols-2">

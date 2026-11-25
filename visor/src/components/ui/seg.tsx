@@ -35,7 +35,7 @@ export function Seg<T extends string>({ value, onChange, options, small, label, 
             className={cn(
               'cursor-pointer text-[0.9375rem] font-medium',
               small && 'text-small',
-              'data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary',
+              'data-[state=on]:bg-ink data-[state=on]:text-on-ink data-[state=on]:hover:bg-ink',
             )}
           >
             {l}

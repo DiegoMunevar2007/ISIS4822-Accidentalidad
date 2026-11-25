@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { MESES_CORTOS, camarasActivas, mesLabel, sitiosDelAmbito, velocidadDelAmbito } from '@/data.js'
 import { fmt, monthBars } from '@/charts.js'
-import { RotateCcw, X } from 'lucide-react'
+import { ArrowLeftRight, RotateCcw, X } from 'lucide-react'
 import { MESES_A_DEF, MESES_B_DEF, useStore } from '@/store'
 import { gravLabel, nLabel, nombreZona, ySiniestros, type Computed } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
@@ -83,11 +83,15 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
         <div className="head-segs">
           <Seg small id="seg-ab-modo" label="Cómo elegir los meses" prefix="Selección" value={st.abModo} onChange={cambiarModo}
             options={[['bandas', 'Bandas'], ['meses', 'Meses sueltos']]} />
+          <Button size="small" id="btn-swap" title="Intercambiar A y B" onClick={() => set({ mesesA: mesesB, mesesB: mesesA })}>
+            <ArrowLeftRight className="size-4" /> Intercambiar A y B
+          </Button>
           <Button size="small" title="Volver a 2019 frente a 2021–22" disabled={restablecido} onClick={() => set({ mesesA: MESES_A_DEF, mesesB: MESES_B_DEF })}>
             <RotateCcw className="size-4" /> Restablecer meses
           </Button>
         </div>
       </header>
+      <p className="sub desc mb-2">Permite comparar dos grupos de meses, por ejemplo antes y después de la instalación, en siniestros, víctimas, cámaras y velocidad.</p>
       {st.abModo === 'meses' && (
         <div className="mb-2 flex flex-wrap items-center gap-3" id="ab-meses-sueltos">
           <Seg small id="seg-click" prefix="Elegir para" value={st.abClick} onChange={(abClick) => set({ abClick })} options={[['A', 'Grupo A'], ['B', 'Grupo B']]} />
