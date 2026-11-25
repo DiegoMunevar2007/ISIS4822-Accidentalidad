@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import { interpolateRgb } from 'd3';
 import 'leaflet/dist/leaflet.css';
 import { C, fmt, showTip, hideTip } from './charts.js';
 
@@ -38,9 +39,32 @@ const PointsLayer = L.Layer.extend({
     const z = map.getZoom();
     const base = n > 20000 ? 0.8 : n > 4000 ? 1.1 : 1.7;
     const r = base * Math.min(3, Math.max(0.8, (z - 11) * 0.5 + 1));
+    // Con muchos puntos y poco zoom los puntos se montan unos sobre otros: se agrupan en celdas y se pinta la densidad.
+    const densidad = n > 12000 && z < 13;
+    if (densidad) {
+      const celda = 9;
+      const cols = Math.ceil(size.x / celda) + 1;
+      const cuenta = new Map();
+      let max = 0;
+      for (let i = 0; i < n; i++) {
+        const p = map.latLngToContainerPoint([lat[i], lon[i]]);
+        if (p.x < 0 || p.y < 0 || p.x > size.x || p.y > size.y) continue;
+        const k = Math.floor(p.y / celda) * cols + Math.floor(p.x / celda);
+        const v = (cuenta.get(k) ?? 0) + 1;
+        cuenta.set(k, v);
+        if (v > max) max = v;
+      }
+      const rampa = interpolateRgb('#dbe9ec', '#0b5c6b');
+      for (const [k, v] of cuenta) {
+        ctx.fillStyle = rampa(Math.sqrt(v / max));
+        ctx.globalAlpha = 0.35 + 0.6 * Math.sqrt(v / max);
+        ctx.fillRect((k % cols) * celda, Math.floor(k / cols) * celda, celda - 1, celda - 1);
+      }
+      ctx.globalAlpha = 1;
+    }
     // Dibujar en orden de gravedad para que los fatales queden encima
-    const colors = ['rgba(140,148,160,0.4)', 'rgba(235,104,52,0.55)', 'rgba(194,49,40,0.92)'];
-    for (let level = 0; level <= 2; level++) {
+    const colors = ['rgba(150,156,162,0.45)', 'rgba(111,163,173,0.6)', 'rgba(11,92,107,0.92)'];
+    for (let level = densidad ? 2 : 0; level <= 2; level++) {
       ctx.fillStyle = colors[level];
       ctx.beginPath();
       const rr = level === 2 ? r * 1.25 : r;
@@ -52,7 +76,7 @@ const PointsLayer = L.Layer.extend({
         ctx.arc(p.x, p.y, rr, 0, Math.PI * 2);
       }
       if (level === 2 || n < 4000) {
-        ctx.strokeStyle = 'rgba(255,253,249,0.95)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
         ctx.lineWidth = 0.8;
         ctx.stroke();
       }
@@ -61,7 +85,7 @@ const PointsLayer = L.Layer.extend({
   },
 });
 
-export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
+export function createMap(el, D, { onSelectSitio, onSelectCorredor, onHoverCorredor }) {
   const map = L.map(el, { zoomControl: true, attributionControl: true, preferCanvas: false, zoomSnap: 0.25 })
     .setView([4.65, -74.1], 11);
   const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
@@ -77,28 +101,34 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
   new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(el);
 
   // Orden de capas: tramos < radios < puntos < sitios
-  [['tramos', 410], ['radios', 415], ['puntos', 420], ['sitios', 430]].forEach(([n, z]) => {
+  [['tramos', 410], ['radios', 415], ['puntos', 420], ['resalte', 425], ['sitios', 430]].forEach(([n, z]) => {
     map.createPane(n).style.zIndex = z;
   });
   map.getPane('radios').style.pointerEvents = 'none';
   map.getPane('puntos').style.pointerEvents = 'none';
+  map.getPane('resalte').style.pointerEvents = 'none';
   const canvasRenderer = L.canvas({ padding: 0.3, tolerance: 6, pane: 'tramos' });
   const sitioRenderer = L.svg({ pane: 'sitios' });
   const tramoLayer = L.layerGroup().addTo(map);
   const bufferLayer = L.layerGroup().addTo(map);
   const points = new PointsLayer().addTo(map);
+  const resalteLayer = L.layerGroup().addTo(map);
+  const resalteRenderer = L.svg({ pane: 'resalte' });
   const sitioLayer = L.layerGroup().addTo(map);
+  // Cámara seleccionada: un ícono propio con su etiqueta, por encima de todo lo demás.
+  const focoLayer = L.layerGroup().addTo(map);
 
   // Tramos Bitcarrier
   const tramoLines = D.geo.tramos.map((t) => {
     const latlngs = t.lines.map((line) => line.map(([x, y]) => [y, x]));
-    const pl = L.polyline(latlngs, { renderer: canvasRenderer, weight: 2, color: '#aab2bd', opacity: 0.85 });
+    const pl = L.polyline(latlngs, { renderer: canvasRenderer, weight: 2, color: '#b7bbbf', opacity: 0.85 });
     pl.tramo = t;
     pl.on('mouseover', (ev) => {
       if (!t.corredor) return;
-      showTip(`<b>${t.corredor}</b><br>Tramo ${t.id.replace('|', ' · ')}<br><span class="muted">Clic para seleccionar el corredor</span>`, ev.originalEvent);
+      onHoverCorredor?.(t.corredor);
+      showTip(`<b>${t.corredor}</b><br>Tramo ${t.id.replace('|', ', ')}`, ev.originalEvent);
     });
-    pl.on('mouseout', hideTip);
+    pl.on('mouseout', () => { hideTip(); onHoverCorredor?.(null); });
     pl.on('click', () => t.corredor && onSelectCorredor(t.corredor));
     pl.addTo(tramoLayer);
     return pl;
@@ -107,7 +137,7 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
   // Sitios de cámara
   const sitioMarkers = D.geo.sitios.map((s) => {
     const mk = L.circleMarker([s.lat, s.lon], {
-      radius: 4 + s.n_camaras, weight: 1.5, renderer: sitioRenderer, pane: 'sitios', color: C.ink, fillColor: '#fffdf9', fillOpacity: 1,
+      radius: 4 + s.n_camaras, weight: 1.5, renderer: sitioRenderer, pane: 'sitios', color: C.ink, fillColor: '#ffffff', fillOpacity: 1,
     });
     mk.sitio = s;
     mk.on('mouseover', (ev) => {
@@ -126,20 +156,43 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
 
   let lastBoundsKey = null;
 
-  function update(st, { pts, sitiosAmbito, conteoSitio, gravLabel }) {
-    const selCorr = st.sitio ? D.geo.sitios.find((s) => s.id === st.sitio).corredor : st.corredor;
+  let selCorr = null;
+  let hoverCorr = null;
+  function restyleTramos() {
     for (const pl of tramoLines) {
       const t = pl.tramo;
       const on = selCorr && t.corredor === selCorr;
+      const hov = hoverCorr && t.corredor === hoverCorr;
       pl.setStyle({
-        color: on ? C.despues : t.cam ? '#8a93a0' : '#c2c9d2',
-        weight: on ? 4 : t.cam ? 2.5 : 1.6,
-        opacity: selCorr && !on ? 0.55 : 0.9,
+        color: on || hov ? C.despues : t.cam ? '#8a9096' : '#c9ccd0',
+        weight: hov ? 6 : on ? 4 : t.cam ? 2.5 : 1.6,
+        opacity: hov ? 1 : selCorr && !on ? 0.55 : 0.9,
       });
-      if (on) pl.bringToFront();
+      if (on || hov) pl.bringToFront();
     }
+  }
+  /** Resalta un corredor sin recalcular puntos ni sitios (se llama al pasar el cursor por la lista). */
+  function setHover(c) {
+    if (c === hoverCorr) return;
+    hoverCorr = c;
+    restyleTramos();
+    // Halo blanco más línea del color de acento, por encima de los puntos para que no los tapen.
+    resalteLayer.clearLayers();
+    if (!c) return;
+    for (const pl of tramoLines) {
+      if (pl.tramo.corredor !== c) continue;
+      const ll = pl.getLatLngs();
+      L.polyline(ll, { renderer: resalteRenderer, pane: 'resalte', color: '#ffffff', weight: 12, opacity: 0.95, interactive: false }).addTo(resalteLayer);
+      L.polyline(ll, { renderer: resalteRenderer, pane: 'resalte', color: C.ink, weight: 6, opacity: 1, interactive: false }).addTo(resalteLayer);
+    }
+  }
+
+  function update(st, { pts, sitiosAmbito, conteoSitio, gravLabel }) {
+    selCorr = st.sitio ? D.geo.sitios.find((s) => s.id === st.sitio).corredor : st.corredor;
+    restyleTramos();
     const ids = new Set(sitiosAmbito.map((s) => s.id));
     bufferLayer.clearLayers();
+    focoLayer.clearLayers();
     if (st.corredor || st.sitio) {
       for (const s of sitiosAmbito) {
         L.circle([s.lat, s.lon], {
@@ -147,13 +200,29 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
         }).addTo(bufferLayer);
       }
     }
+    if (st.sitio && sitiosAmbito[0]) {
+      const s = sitiosAmbito[0];
+      const pin = L.marker([s.lat, s.lon], {
+        interactive: false, keyboard: false, zIndexOffset: 1000,
+        icon: L.divIcon({ className: 'cam-pin', html: '<span></span>', iconSize: [26, 26], iconAnchor: [13, 13] }),
+      }).addTo(focoLayer);
+      pin.bindTooltip(
+        `<b>Cámara</b><br>${s.via}<br>${s.n_camaras} cámara${s.n_camaras > 1 ? 's' : ''}, ${s.tipo}, límite ${s.limite} km/h`,
+        { permanent: true, direction: 'right', offset: [24, 0], className: 'cam-label' },
+      );
+      // Etiqueta del radio, sobre el borde norte del círculo.
+      L.marker([s.lat + st.radio / 111320, s.lon], {
+        interactive: false, keyboard: false,
+        icon: L.divIcon({ className: 'radio-label', html: `<span>${st.radio} m</span>`, iconSize: [0, 0] }),
+      }).addTo(focoLayer);
+    }
     for (const mk of sitioMarkers) {
       const s = mk.sitio;
       const sel = (st.corredor || st.sitio) && ids.has(s.id);
       mk._sel = sel;
       mk.setStyle({
         color: sel ? C.despues : C.ink,
-        fillColor: st.sitio === s.id ? C.ink : '#fffdf9',
+        fillColor: st.sitio === s.id ? C.ink : '#ffffff',
         weight: sel ? 2.5 : 1.5,
         opacity: (st.corredor || st.sitio) && !sel ? 0.45 : 1,
         fillOpacity: (st.corredor || st.sitio) && !sel ? 0.5 : 1,
@@ -161,9 +230,8 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
       if (sel) mk.bringToFront();
       mk._tipHtml = () => {
         const c = conteoSitio.get(s.id) ?? 0;
-        return `<b>${s.corredor} · ${s.via}</b><br>${s.id} · ${s.n_camaras} cámara${s.n_camaras > 1 ? 's' : ''} · ${s.tipo} · límite ${s.limite} km/h<br>
-          Desde ${s.fecha}<br><b>${fmt.int(c)}</b> ${gravLabel} a ≤ ${st.radio} m (filtros actuales)<br>
-          <span class="muted">${st.sitio === s.id ? 'Clic otra vez para quitar' : 'Clic para seleccionar este sitio'}</span>`;
+        return `<b>${s.corredor}, ${s.via}</b><br>${s.id}: ${s.n_camaras} cámara${s.n_camaras > 1 ? 's' : ''} (${s.tipo}), límite ${s.limite} km/h<br>
+          Desde ${s.fecha}<br><b>${fmt.int(c)}</b> ${gravLabel} a ≤ ${st.radio} m (filtros actuales)`;
       };
     }
     points.setPoints(pts);
@@ -186,5 +254,5 @@ export function createMap(el, D, { onSelectSitio, onSelectCorredor }) {
     }
   }
 
-  return { map, update, invalidate: () => map.invalidateSize() };
+  return { map, update, setHover, invalidate: () => map.invalidateSize() };
 }

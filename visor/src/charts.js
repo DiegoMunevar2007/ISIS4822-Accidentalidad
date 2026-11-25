@@ -1,20 +1,23 @@
 import * as d3 from 'd3';
 
 export const C = {
-  ink: '#18212e',
-  ink2: '#4a5563',
-  muted: '#6b7686',
-  grid: '#e6eaf0',
-  track: '#eef1f5',
+  ink: '#17191c',
+  ink2: '#3d4349',
+  muted: '#5c636a',
+  grid: '#e4e4e0',
+  track: '#ececE8',
   surface: '#ffffff', // halo/gap sobre paneles
-  neutral: '#c3cad4', // barra 2020 / neutro
-  antes: '#2360bd', // A / antes
-  despues: '#c23128', // B / después
-  y2020: '#9aa2ae',
-  y2021: '#eb6834',
-  y2022: '#b0241c',
-  cam: '#6250d6',
-  ctrl: '#0f9d6b',
+  neutral: '#cfcfca', // barra 2020 / neutro
+  antes: '#6b7178', // antes / A: gris
+  despues: '#0b5c6b', // después / B / foco: único acento
+  y2020: '#b3b3ac',
+  y2021: '#5f9aa5',
+  y2022: '#0b5c6b',
+  cam: '#0b5c6b',
+  ctrl: '#7a8087',
+  fatal: '#0b5c6b',
+  grave: '#6fa3ad',
+  dano: '#a9aeb3',
 };
 
 export const fmt = {
@@ -45,17 +48,20 @@ export function showTip(html, ev) {
 }
 export const hideTip = () => (tip().hidden = true);
 
-const sw = (color, dash) =>
-  `<svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4" stroke="${color}" stroke-width="2.5" ${dash ? 'stroke-dasharray="4 3"' : ''}/></svg>`;
-export const legendHtml = (items) =>
-  `<div class="chart-legend">${items.map((s) => `<span>${sw(s.color, s.dash)}${s.label}</span>`).join('')}</div>`;
-
 // ---------------------------------------------------------------- barras anuales
+/** Título vertical del eje Y, centrado en el área de trazado. */
+/** @param {any} svg @param {string} text @param {any} m @param {number} H */
+function yAxisLabel(svg, text, m, H) {
+  svg.append('text').attr('class', 'ylabel').attr('transform', `translate(14,${(m.t + H - m.b) / 2}) rotate(-90)`)
+    .attr('text-anchor', 'middle').text(text);
+}
+
+/** @param {any} el @param {any} data @param {any} [opts] */
 export function annualBars(el, data, { yMax, onHover, yLabel = 'Siniestros', xLabel = 'Año' } = {}) {
   el.innerHTML = '';
   const W = el.clientWidth || 360;
-  const H = 184;
-  const m = { t: 34, r: 8, b: 40, l: 34 };
+  const H = 240;
+  const m = { t: 34, r: 12, b: 48, l: 78 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H);
   const x = d3.scaleBand(data.map((d) => d.year), [m.l, W - m.r]).padding(0.38);
   const max = yMax ?? d3.max(data, (d) => d.n) ?? 1;
@@ -70,7 +76,7 @@ export function annualBars(el, data, { yMax, onHover, yLabel = 'Siniestros', xLa
   const g = svg.append('g').selectAll('g').data(data).join('g')
     .attr('transform', (d) => `translate(${x(d.year) + (x.bandwidth() - bw) / 2},0)`);
   g.append('path')
-    .attr('d', (d) => roundedTop(0, y(d.n), bw, y(0) - y(d.n), 4))
+    .attr('d', (d) => roundedTop(0, y(d.n), bw, y(0) - y(d.n), 0))
     .attr('fill', (d) => (d.year === 2020 ? C.neutral : d.year === 2019 ? C.antes : d.year >= 2021 ? C.despues : C.ink));
   g.append('text').attr('class', 'val').attr('x', bw / 2).attr('y', (d) => y(d.n) - 6).attr('text-anchor', 'middle')
     .text((d) => fmt.int(d.n));
@@ -78,8 +84,8 @@ export function annualBars(el, data, { yMax, onHover, yLabel = 'Siniestros', xLa
     .attr('fill', 'transparent')
     .on('mousemove', (ev, d) => showTip(onHover(d), ev))
     .on('mouseleave', hideTip);
-  if (yLabel) svg.append('text').attr('class', 'ylabel').attr('x', 0).attr('y', 12).text(yLabel);
-  if (xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+  if (yLabel) yAxisLabel(svg, yLabel, m, H);
+  if (xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 4)
     .attr('text-anchor', 'middle').text(xLabel);
 }
 
@@ -87,33 +93,6 @@ function roundedTop(x, y, w, h, r) {
   if (h <= 0) return `M${x},${y}h${w}`;
   r = Math.min(r, h, w / 2);
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
-}
-
-// ---------------------------------------------------------------- barras horizontales pareadas
-/** rows: [{label, a, b, aLabel, bLabel, tip}] -> dos barras por fila (antes azul / después rojo). */
-export function pairedBars(el, rows, { max, fmtVal = fmt.dec } = {}) {
-  el.innerHTML = '';
-  const mx = max ?? (d3.max(rows, (r) => Math.max(r.a, r.b)) || 1);
-  const html = rows
-    .map(
-      (r) => `
-    <div class="pb-row" data-tip="${encodeURIComponent(r.tip || '')}">
-      <div class="pb-label">${r.label}</div>
-      <div class="pb-bars">
-        <div class="pb-line"><div class="pb-bar" style="width:${(100 * r.a) / mx}%;background:${C.antes}"></div><b>${fmtVal(r.a)}</b></div>
-        <div class="pb-line"><div class="pb-bar" style="width:${(100 * r.b) / mx}%;background:${C.despues}"></div><b>${fmtVal(r.b)}</b></div>
-      </div>
-      ${r.delta != null ? `<div class="pb-delta ${r.delta < 0 ? 'down' : r.delta > 0 ? 'up' : ''}">${fmt.pct(r.delta)}</div>` : ''}
-    </div>`,
-    )
-    .join('');
-  el.innerHTML = html;
-  el.querySelectorAll('.pb-row').forEach((row) => {
-    const t = decodeURIComponent(row.dataset.tip);
-    if (!t) return;
-    row.addEventListener('mousemove', (ev) => showTip(t, ev));
-    row.addEventListener('mouseleave', hideTip);
-  });
 }
 
 // ---------------------------------------------------------------- gráfica de líneas genérica
@@ -124,8 +103,8 @@ export function pairedBars(el, rows, { max, fmtVal = fmt.dec } = {}) {
 export function lineChart(el, o) {
   el.innerHTML = '';
   const W = el.clientWidth || 600;
-  const H = o.height ?? 260;
-  const m = { t: 26, r: o.directLabels ? 78 : 14, b: o.xLabel ? 42 : 26, l: 40 };
+  const H = o.height ?? 280;
+  const m = { t: o.top ?? 30, r: o.right ?? (o.directLabels ? 104 : 16), b: o.xLabel ? 52 : 30, l: o.left ?? (o.yLabel ? 78 : 46) };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
   const x = d3.scaleLinear(o.xDomain ?? d3.extent(o.xs), [m.l, W - m.r]);
   const allY = o.series.flatMap((s) => s.ys.filter((v) => v != null));
@@ -136,16 +115,25 @@ export function lineChart(el, o) {
     const x0 = Math.max(x(b.x0), m.l);
     const x1 = Math.min(x(b.x1), W - m.r);
     if (x1 <= x0) continue;
-    svg.append('rect').attr('class', 'band').attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
-    if (b.label && x1 - x0 > 46)
-      svg.append('text').attr('class', 'band-label').attr('x', x0 + 4).attr('y', m.t + 11).text(b.label);
+    svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
+  }
+  // Las etiquetas van después de todas las bandas para que ninguna las tape.
+  for (const b of o.bands ?? []) {
+    const x0 = Math.max(x(b.x0), m.l);
+    const x1 = Math.min(x(b.x1), W - m.r);
+    if (b.label && x1 - x0 > 60) {
+      const end = b.align === 'end';
+      svg.append('text').attr('class', 'band-label').attr('x', end ? x1 - 4 : x0 + 4).attr('y', H - m.b - 8 - 16 * (b.row ?? 0))
+        .attr('text-anchor', end ? 'end' : 'start').text(b.label);
+    }
   }
   // con conteos pequeños solo se muestran marcas enteras
   const yt = o.yFormat ? y.ticks(4) : y.ticks(4).filter(Number.isInteger);
   svg.append('g').attr('class', 'grid').selectAll('line').data(yt).join('line')
     .attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
-  svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
-    .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat(o.yFormat ?? fmt.int)).call((g) => g.select('.domain').remove());
+  if (!o.hideYAxis)
+    svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
+      .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat(o.yFormat ?? fmt.int)).call((g) => g.select('.domain').remove());
   const clipId = `clip-${Math.random().toString(36).slice(2, 9)}`;
   svg.append('clipPath').attr('id', clipId).append('rect')
     .attr('x', m.l - 4).attr('y', 0).attr('width', W - m.l - m.r + 8).attr('height', H - m.b + 4);
@@ -153,8 +141,8 @@ export function lineChart(el, o) {
   if (o.xTicks) xa.tickValues(o.xTicks.filter((t) => t >= x.domain()[0] && t <= x.domain()[1]));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa)
     .call((g) => g.select('.domain').attr('stroke', C.grid));
-  if (o.yLabel) svg.append('text').attr('class', 'ylabel').attr('x', m.l - 34).attr('y', 12).text(o.yLabel);
-  if (o.xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+  if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
+  if (o.xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 4)
     .attr('text-anchor', 'middle').text(o.xLabel);
 
   for (const r of o.refLines ?? []) {
@@ -191,7 +179,7 @@ export function lineChart(el, o) {
       if (s.ys[k] != null) labs.push({ s, k, y: y(s.ys[k]) + 4 });
     }
     labs.sort((a, b) => a.y - b.y);
-    for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + 13);
+    for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + 16);
     for (const l of labs)
       glabels.append('text').attr('class', 'dlabel').attr('x', x(o.xs[l.k]) + 6).attr('y', l.y).text(l.s.label);
   }
@@ -228,13 +216,212 @@ export function lineChart(el, o) {
   return { x, y };
 }
 
+// ---------------------------------------------------------------- barras mensuales con dos bandas (A y B)
+/**
+ * Una barra por mes y dos bandas arrastrables: A (gris) y B (verde azulado). Se mueven por dentro y
+ * se redimensionan por los bordes; siempre quedan alineadas a meses completos y sin solaparse.
+ * opts: values[], grupoA[], grupoB[], modo ('bandas' | 'meses'), activo ('A'|'B', solo en 'meses'), bands[], yLabel,
+ *       xTickFormat(m), tooltip(i), resumen(letra, ancho), onRange(letra, desde, hasta) en 'bandas',
+ *       onPick(indices, {shift, arrastre}) en 'meses', height
+ */
+export function monthBars(el, o) {
+  el.innerHTML = '';
+  const W = el.clientWidth || 700;
+  const H = o.height ?? 270;
+  const m = { t: 56, r: 16, b: 38, l: 78 };
+  const n = o.values.length;
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
+  const x = d3.scaleBand(d3.range(n), [m.l, W - m.r]).padding(0.22);
+  const y = d3.scaleLinear([0, d3.max(o.values) || 1], [H - m.b, m.t]).nice(4);
+  const step = (W - m.l - m.r) / n;
+  const enA = new Set(o.grupoA), enB = new Set(o.grupoB);
+  const colorA = C.antes, colorB = C.despues;
+  const top = m.t - 6;
+  const alto = H - m.b - top;
+
+  for (const b of o.bands ?? []) {
+    const x0 = m.l + b.x0 * step, x1 = m.l + (b.x1 + 1) * step;
+    svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', top).attr('height', alto);
+  }
+  const yt = y.ticks(4).filter(Number.isInteger);
+  svg.append('g').attr('class', 'grid').selectAll('line').data(yt).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
+  svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
+    .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat(fmt.int)).call((g) => g.select('.domain').remove());
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).tickValues(d3.range(n).filter((i) => i % 3 === 0)).tickSize(4).tickFormat(o.xTickFormat ?? String))
+    .call((g) => g.select('.domain').attr('stroke', C.grid));
+  if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
+
+  svg.append('g').selectAll('rect').data(o.values).join('rect')
+    .attr('x', (d, i) => x(i)).attr('width', x.bandwidth())
+    .attr('y', (d) => y(d)).attr('height', (d) => Math.max(0, y(0) - y(d)))
+    .attr('fill', (d, i) => (enA.has(i) ? colorA : enB.has(i) ? colorB : '#d3d6d9'));
+
+  for (const b of o.bands ?? []) {
+    if (!b.label) continue;
+    const x0 = m.l + b.x0 * step, x1 = m.l + (b.x1 + 1) * step;
+    svg.append('text').attr('class', 'band-label').attr('x', b.align === 'end' ? x1 - 4 : x0 + 4).attr('y', m.t - 34)
+      .attr('text-anchor', b.align === 'end' ? 'end' : 'start').text(b.label);
+  }
+
+  // Pasar el cursor por cualquier mes muestra su valor
+  const cross = svg.append('rect').attr('fill', 'rgba(11,92,107,0.10)').attr('y', top).attr('height', alto).style('opacity', 0).attr('pointer-events', 'none');
+  const indice = (ev) => Math.max(0, Math.min(n - 1, Math.floor((d3.pointer(ev, svg.node())[0] - m.l) / step)));
+  const hover = (ev) => {
+    const i = indice(ev);
+    cross.attr('x', m.l + i * step).attr('width', step).style('opacity', 1);
+    if (o.tooltip) showTip(o.tooltip(i), ev);
+  };
+  const salir = () => { cross.style('opacity', 0); hideTip(); };
+  const etiqueta = (letra, col, i0, i1) => {
+    const ancho = (i1 - i0 + 1) * step;
+    svg.append('text').attr('class', 'val').attr('fill', col).attr('x', m.l + (i0 + (i1 - i0 + 1) / 2) * step).attr('y', top - 6)
+      .attr('text-anchor', 'middle').attr('pointer-events', 'none').text(o.resumen ? o.resumen(letra, ancho) : letra);
+  };
+
+  if (o.modo === 'meses') {
+    // Meses sueltos: clic alterna un mes, arrastrar pinta un tramo, Shift + clic extiende. Funciona con teclado.
+    const teniaFoco = el.contains(document.activeElement);
+    const previa = svg.append('rect').attr('y', top).attr('height', alto).attr('fill', o.activo === 'A' ? colorA : colorB).attr('opacity', 0.22).style('opacity', 0).attr('pointer-events', 'none');
+    const foco = svg.append('rect').attr('y', top).attr('height', alto).attr('fill', 'none').attr('stroke', C.ink).attr('stroke-width', 2).style('opacity', 0).attr('pointer-events', 'none');
+    const pintar = (i, j) => previa.attr('x', m.l + Math.min(i, j) * step).attr('width', (Math.abs(i - j) + 1) * step).style('opacity', 1);
+    // Un trazo fino sobre cada tramo continuo de un grupo, fuera de las barras
+    for (const [grupo, col] of [[o.grupoA, colorA], [o.grupoB, colorB]]) {
+      let ini = 0;
+      for (let k = 1; k <= grupo.length; k++) {
+        if (k === grupo.length || grupo[k] !== grupo[k - 1] + 1) {
+          if (grupo.length) svg.append('rect').attr('x', m.l + grupo[ini] * step + 1).attr('width', (grupo[k - 1] - grupo[ini] + 1) * step - 2).attr('y', top - 2).attr('height', 3).attr('fill', col);
+          ini = k;
+        }
+      }
+    }
+    for (const [letra, grupo, col] of [['A', o.grupoA, colorA], ['B', o.grupoB, colorB]]) {
+      if (grupo.length) etiqueta(letra, col, grupo[0], grupo[grupo.length - 1]);
+    }
+    let inicio = null;
+    let moviendo = false;
+    const zona = svg.append('rect').attr('x', m.l).attr('y', top).attr('width', W - m.l - m.r).attr('height', alto).attr('fill', 'transparent')
+      .style('cursor', 'pointer').style('touch-action', 'none').style('outline', 'none').attr('tabindex', 0)
+      .attr('role', 'application').attr('aria-label', 'Meses. Flechas para moverse, espacio para elegir el mes en el grupo activo.');
+    zona
+      .on('pointerdown', (ev) => { inicio = indice(ev); moviendo = false; zona.node().setPointerCapture?.(ev.pointerId); })
+      .on('pointermove', (ev) => {
+        const i = indice(ev);
+        cross.attr('x', m.l + i * step).attr('width', step).style('opacity', 1);
+        if (inicio != null && i !== inicio) { moviendo = true; pintar(inicio, i); hideTip(); }
+        else if (inicio == null && o.tooltip) showTip(o.tooltip(i), ev);
+      })
+      .on('pointerup', (ev) => {
+        if (inicio == null) return;
+        const i = indice(ev);
+        const desde = inicio;
+        inicio = null;
+        previa.style('opacity', 0);
+        if (moviendo || i !== desde) o.onPick?.(d3.range(Math.min(desde, i), Math.max(desde, i) + 1), { shift: false, arrastre: true });
+        else o.onPick?.([i], { shift: ev.shiftKey, arrastre: false });
+      })
+      .on('pointerleave', () => { cross.style('opacity', 0); if (inicio == null) hideTip(); })
+      .on('keydown', (ev) => {
+        let f = el._foco ?? 0;
+        if (ev.key === 'ArrowRight') f = Math.min(n - 1, f + 1);
+        else if (ev.key === 'ArrowLeft') f = Math.max(0, f - 1);
+        else if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); o.onPick?.([f], { shift: ev.shiftKey, arrastre: false }); return; }
+        else return;
+        ev.preventDefault();
+        el._foco = f;
+        foco.attr('x', m.l + f * step).attr('width', step).style('opacity', 1);
+      })
+      .on('focus', () => { const f = el._foco ?? 0; foco.attr('x', m.l + f * step).attr('width', step).style('opacity', 1); })
+      .on('blur', () => foco.style('opacity', 0));
+    if (teniaFoco) zona.node().focus();
+    return;
+  }
+
+  svg.append('rect').attr('x', m.l).attr('y', top).attr('width', W - m.l - m.r).attr('height', alto).attr('fill', 'transparent')
+    .on('mousemove', hover).on('mouseleave', salir);
+
+  // Dos bandas arrastrables
+  const rangos = { A: [o.grupoA[0], o.grupoA[o.grupoA.length - 1]], B: [o.grupoB[0], o.grupoB[o.grupoB.length - 1]] };
+  for (const [letra, col] of [['A', colorA], ['B', colorB]]) {
+    const [i0, i1] = rangos[letra];
+    if (i0 == null) continue;
+    const otra = rangos[letra === 'A' ? 'B' : 'A'];
+    const g = svg.append('g').attr('class', `banda-ab banda-${letra}`);
+    const brush = d3.brushX().extent([[m.l, top], [W - m.r, H - m.b]]).handleSize(3)
+      .on('end', (ev) => {
+        if (!ev.sourceEvent || !ev.selection) return;
+        const [px0, px1] = ev.selection;
+        let d = Math.max(0, Math.round((px0 - m.l) / step));
+        let h = Math.min(n - 1, Math.max(d, Math.round((px1 - m.l) / step) - 1));
+        const solapa = otra[0] != null && d <= otra[1] && h >= otra[0];
+        if (solapa) d = h = null;
+        if (d == null || (d === i0 && h === i1)) g.call(brush.move, [m.l + i0 * step, m.l + (i1 + 1) * step]);
+        else o.onRange?.(letra, d, h);
+      });
+    g.call(brush);
+    g.select('.overlay').style('pointer-events', 'none');
+    g.select('.selection').attr('fill', col).attr('fill-opacity', 0.14).attr('stroke', col).attr('stroke-width', 1).attr('stroke-opacity', 0.9)
+      .on('mousemove', hover).on('mouseleave', salir);
+    // Manijas finas; el trazo transparente ensancha la zona donde se puede agarrar.
+    g.selectAll('.handle').attr('fill', col).attr('rx', 1.5).attr('opacity', 0.95).attr('stroke', 'transparent').attr('stroke-width', 12);
+    g.call(brush.move, [m.l + i0 * step, m.l + (i1 + 1) * step]);
+    etiqueta(letra, col, i0, i1);
+  }
+}
+
+// ---------------------------------------------------------------- diferencia entre dos series
+/**
+ * Área divergente alrededor de cero: lo que está por encima del cero es teal, lo de abajo es gris.
+ * opts: xs[], ds[] (diferencias), xDomain, xTicks, xTickFormat, yLabel, labels[arriba, abajo],
+ * bands[], tooltip(i), height, left, right
+ */
+export function diffChart(el, o) {
+  el.innerHTML = '';
+  const W = el.clientWidth || 600;
+  const H = o.height ?? 170;
+  const m = { t: 14, r: o.right ?? 16, b: 36, l: o.left ?? 78 };
+  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
+  const x = d3.scaleLinear(o.xDomain ?? d3.extent(o.xs), [m.l, W - m.r]);
+  const lim = Math.max(10, d3.max(o.ds, (d) => Math.abs(d)) || 10);
+  const y = d3.scaleLinear([-lim, lim], [H - m.b, m.t]).nice(2);
+  for (const b of o.bands ?? []) {
+    const x0 = Math.max(x(b.x0), m.l), x1 = Math.min(x(b.x1), W - m.r);
+    if (x1 > x0) svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
+  }
+  const yt = y.ticks(4);
+  svg.append('g').attr('class', 'grid').selectAll('line').data(yt).join('line')
+    .attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
+  svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
+    .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat((v) => (v > 0 ? `+${v}` : String(v)))).call((g) => g.select('.domain').remove());
+  const xa = d3.axisBottom(x).tickSize(0).tickPadding(12).tickFormat(o.xTickFormat ?? String);
+  if (o.xTicks) xa.tickValues(o.xTicks.filter((t) => t >= x.domain()[0] && t <= x.domain()[1]));
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa).call((g) => g.select('.domain').remove());
+  const area = (f) => d3.area().x((d, i) => x(o.xs[i])).y0(y(0)).y1((d) => y(f(d))).curve(d3.curveLinear)(o.ds);
+  svg.append('path').attr('d', area((d) => Math.max(d, 0))).attr('fill', C.cam).attr('opacity', 0.85);
+  svg.append('path').attr('d', area((d) => Math.min(d, 0))).attr('fill', C.ctrl).attr('opacity', 0.7);
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C.ink).attr('stroke-width', 1.25);
+  if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
+  if (o.labels) {
+    svg.append('text').attr('class', 'band-label').attr('x', W - m.r - 4).attr('y', m.t + 12).attr('text-anchor', 'end').text(o.labels[0]);
+    svg.append('text').attr('class', 'band-label').attr('x', W - m.r - 4).attr('y', H - m.b - 6).attr('text-anchor', 'end').text(o.labels[1]);
+  }
+  const cross = svg.append('line').attr('class', 'cross').attr('y1', m.t).attr('y2', H - m.b).style('opacity', 0);
+  svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', W - m.l - m.r).attr('height', H - m.t - m.b).attr('fill', 'transparent')
+    .on('mousemove', (ev) => {
+      const i = d3.minIndex(o.xs, (v) => Math.abs(v - x.invert(d3.pointer(ev)[0])));
+      cross.attr('x1', x(o.xs[i])).attr('x2', x(o.xs[i])).style('opacity', 1);
+      if (o.tooltip) showTip(o.tooltip(i), ev);
+    })
+    .on('mouseleave', () => { cross.style('opacity', 0); hideTip(); });
+}
+
 // ---------------------------------------------------------------- contexto con brush
 /** Barras mensuales pequeñas con un selector de rango (en días). */
 export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
   el.innerHTML = '';
   const W = el.clientWidth || 600;
-  const H = 54;
-  const m = { t: 4, r: 14, b: 18, l: 40 };
+  const H = 62;
+  const m = { t: 4, r: 14, b: 22, l: 50 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'context');
   const x = d3.scaleLinear([0, 1461], [m.l, W - m.r]);
   const y = d3.scaleLinear([0, d3.max(monthly) || 1], [H - m.b, m.t]);
@@ -242,7 +429,7 @@ export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
     .attr('x', (d, i) => x(monthStartDay[i]) + 0.5)
     .attr('width', (d, i) => Math.max(1, x(monthStartDay[i + 1] ?? 1461) - x(monthStartDay[i]) - 1))
     .attr('y', (d) => y(d)).attr('height', (d) => y(0) - y(d))
-    .attr('fill', (d, i) => (i < 12 ? '#bcd2f0' : i < 24 ? '#dfe4ea' : '#eeb8b2'));
+    .attr('fill', (d, i) => (i < 12 ? '#9aa0a6' : i < 24 ? '#d9d9d4' : '#5f9aa5'));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).tickValues([0, 365, 731, 1096]).tickSize(3).tickFormat((d, i) => 2019 + i))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
@@ -257,131 +444,6 @@ export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
   if (range) gb.call(brush.move, range.map(x));
 }
 
-// ---------------------------------------------------------------- tarjeta A/B (barra de progreso)
-export function meter(value, max, color) {
-  const w = max > 0 ? Math.min(100, (100 * value) / max) : 0;
-  return `<div class="meter"><div style="width:${w}%;background:${color}"></div></div>`;
-}
-
-// ---------------------------------------------------------------- dumbbell: cámara vs. control
-/**
- * rows: [{ key, label, a, b, n, tip }]
- * a = cambio de la zona con cámara (fracción), b = cambio del control (fracción).
- * Se usa en el panorama para los tres niveles de gravedad.
- */
-export function dumbbell(el, rows, { selected, onSelect } = {}) {
-  el.innerHTML = '';
-  if (!rows.length) return;
-  const W = el.clientWidth || 560;
-  const rowH = 44;
-  const m = { t: 26, r: 18, b: 46, l: 158 };
-  const H = m.t + rows.length * rowH + m.b;
-  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'dumbbell');
-  const vals = rows.flatMap((r) => [r.a, r.b]).filter((v) => v != null);
-  const [lo, hi] = d3.extent([...vals, 0]);
-  const pad = Math.max(0.04, (hi - lo) * 0.18);
-  const x = d3.scaleLinear([lo - pad, hi + pad], [m.l, W - m.r]).nice(4);
-
-  svg.append('g').attr('class', 'grid').selectAll('line').data(x.ticks(4)).join('line')
-    .attr('x1', x).attr('x2', x).attr('y1', m.t - 8).attr('y2', H - m.b);
-  svg.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0))
-    .attr('y1', m.t - 8).attr('y2', H - m.b);
-
-  const rowsG = svg.append('g').selectAll('g').data(rows).join('g')
-    .attr('class', (r) => `db-row${r.key === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
-    .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
-  rowsG.append('rect').attr('class', 'db-bg').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
-    .attr('rx', 4).attr('fill', (r) => (r.key === selected ? 'var(--soft)' : 'transparent'));
-  rowsG.append('text').attr('class', 'db-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
-    .attr('text-anchor', 'end').text((r) => r.label);
-  rowsG.append('text').attr('class', 'db-n').attr('x', m.l - 12).attr('y', rowH / 2 + 18)
-    .attr('text-anchor', 'end').text((r) => (r.n == null ? '' : `N = ${fmt.int(r.n)}`));
-  rowsG.append('line').attr('class', 'db-link')
-    .attr('x1', (r) => x(r.a)).attr('x2', (r) => x(r.b))
-    .attr('y1', rowH / 2).attr('y2', rowH / 2);
-  rowsG.append('circle').attr('class', 'db-dot cam')
-    .attr('cx', (r) => x(r.a)).attr('cy', rowH / 2).attr('r', 5)
-    .attr('fill', C.cam);
-  rowsG.append('circle').attr('class', 'db-dot ctrl')
-    .attr('cx', (r) => x(r.b)).attr('cy', rowH / 2).attr('r', 5)
-    .attr('fill', C.ctrl);
-  rowsG.append('rect').attr('class', 'db-hit').attr('x', 0).attr('y', 2).attr('width', W).attr('height', rowH - 4)
-    .attr('fill', 'transparent')
-    .on('mousemove', (ev, r) => showTip(r.tip, ev))
-    .on('mouseleave', hideTip)
-    .on('click', (_, r) => onSelect?.(r.key));
-
-  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
-    .call(d3.axisBottom(x).ticks(4).tickFormat((v) => fmt.pct(v)).tickSize(3))
-    .call((g) => g.select('.domain').attr('stroke', C.grid));
-  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
-    .attr('text-anchor', 'middle').text('Cambio (%)');
-  if (onSelect) svg.style('cursor', 'pointer');
-}
-
-// ---------------------------------------------------------------- dot plot por corredor
-/**
- * rows: [{ corredor, value, n, antes, despues, ma, md, tip }]
- * value = cambio de la zona con cámara del corredor (fracción).
- * control = cambio del control de la ciudad (fracción) para la línea de referencia.
- */
-export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
-  el.innerHTML = '';
-  if (!rows.length) return;
-  const W = el.clientWidth || 760;
-  const rowH = 25;
-  const m = { t: 30, r: 54, b: 48, l: 168 };
-  const H = m.t + rows.length * rowH + m.b;
-  const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'corridor-dots');
-  const vals = rows.map((r) => r.value).filter((v) => v != null);
-  if (control != null) vals.push(control);
-  vals.push(0);
-  const [lo, hi] = d3.extent(vals);
-  const pad = Math.max(0.04, (hi - lo) * 0.14);
-  const x = d3.scaleLinear([lo - pad, hi + pad], [m.l, W - m.r]).nice(4);
-
-  svg.append('g').attr('class', 'grid').selectAll('line').data(x.ticks(4)).join('line')
-    .attr('x1', x).attr('x2', x).attr('y1', m.t - 10).attr('y2', H - m.b);
-  svg.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0))
-    .attr('y1', m.t - 10).attr('y2', H - m.b);
-  if (control != null) {
-    svg.append('line').attr('class', 'control-line').attr('x1', x(control)).attr('x2', x(control))
-      .attr('y1', m.t - 18).attr('y2', H - m.b);
-    svg.append('text').attr('class', 'control-label')
-      .attr('x', x(control)).attr('y', m.t - 24)
-      .attr('text-anchor', x(control) > W * 0.72 ? 'end' : 'start')
-      .text(`control ciudad ${fmt.pct(control)}`);
-  }
-
-  const g = svg.append('g').selectAll('g').data(rows).join('g')
-    .attr('class', (r) => `cd-row${r.corredor === selected ? ' sel' : ''}${onSelect ? ' clickable' : ''}`)
-    .attr('transform', (r, i) => `translate(0,${m.t + i * rowH})`);
-  g.append('rect').attr('class', 'cd-bg').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
-    .attr('rx', 4).attr('fill', (r) => (r.corredor === selected ? 'var(--soft)' : 'transparent'));
-  g.append('text').attr('class', 'cd-label').attr('x', m.l - 12).attr('y', rowH / 2 + 4)
-    .attr('text-anchor', 'end').text((r) => r.corredor);
-  g.append('circle').attr('class', 'cd-dot')
-    .attr('cx', (r) => x(r.value)).attr('cy', rowH / 2)
-    .attr('r', (r) => (r.corredor === selected ? 6 : 4.5))
-    .attr('fill', (r) => (r.corredor === selected ? C.despues : C.cam));
-  g.append('text').attr('class', 'cd-n').attr('x', W - m.r + 10).attr('y', rowH / 2 + 4)
-    .text((r) => fmt.int(r.n));
-  g.append('rect').attr('class', 'cd-hit').attr('x', 0).attr('y', 1).attr('width', W).attr('height', rowH - 2)
-    .attr('fill', 'transparent')
-    .on('mousemove', (ev, r) => showTip(r.tip, ev))
-    .on('mouseleave', hideTip)
-    .on('click', (_, r) => onSelect?.(r.corredor));
-
-  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
-    .call(d3.axisBottom(x).ticks(4).tickFormat((v) => fmt.pct(v)).tickSize(3))
-    .call((g) => g.select('.domain').attr('stroke', C.grid));
-  svg.append('text').attr('class', 'cd-hint').attr('x', W - m.r + 10).attr('y', m.t - 24)
-    .attr('text-anchor', 'end').text('N');
-  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
-    .attr('text-anchor', 'middle').text('Cambio (%)');
-  if (onSelect) svg.style('cursor', 'pointer');
-}
-
 // ---------------------------------------------------------------- dispersión: velocidad vs. gravedad
 /**
  * rows: [{ corredor, speed, share, total, fatal, tip }]
@@ -390,12 +452,12 @@ export function corridorDots(el, rows, { control, selected, onSelect } = {}) {
 export function speedSeverityScatter(el, rows, { selected, onSelect } = {}) {
   el.innerHTML = '';
   if (!rows.length) {
-    el.innerHTML = '<p class="muted">Sin datos de velocidad para estos corredores.</p>';
+    el.innerHTML = '<p class="muted">No existe información de velocidad para estos corredores.</p>';
     return;
   }
   const W = el.clientWidth || 700;
-  const H = 300;
-  const m = { t: 26, r: 24, b: 46, l: 48 };
+  const H = 330;
+  const m = { t: 20, r: 24, b: 54, l: 78 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'scatter');
   const x = d3.scaleLinear(d3.extent(rows, (d) => d.speed), [m.l, W - m.r]).nice(4);
   const y = d3.scaleLinear([0, (d3.max(rows, (d) => d.share) || 0.01) * 100], [H - m.b, m.t]).nice(4);
@@ -411,8 +473,8 @@ export function speedSeverityScatter(el, rows, { selected, onSelect } = {}) {
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
     .call(d3.axisBottom(x).ticks(5).tickSize(3).tickFormat((v) => fmt.int(v)))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
-  svg.append('text').attr('class', 'ylabel').attr('x', 0).attr('y', 12).text('% siniestros con muertos');
-  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 3)
+  yAxisLabel(svg, '% siniestros con muertos', m, H);
+  svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 4)
     .attr('text-anchor', 'middle').text('Velocidad P85 (km/h)');
 
   const g = svg.append('g').selectAll('g').data(rows).join('g')

@@ -7,9 +7,9 @@ export const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'a
 
 export const PERIODOS = {
   todo: { label: 'Todo 2019–2022', m0: 0, m1: 47 },
-  antes: { label: 'Antes de la instalación · 2019', m0: 0, m1: 11 },
-  transicion: { label: 'Instalación y pandemia · 2020', m0: 12, m1: 23 },
-  despues: { label: 'Después de la instalación · 2021–2022', m0: 24, m1: 47 },
+  antes: { label: 'Antes de la instalación (2019)', m0: 0, m1: 11 },
+  transicion: { label: 'Instalación y pandemia (2020)', m0: 12, m1: 23 },
+  despues: { label: 'Después de la instalación (2021–2022)', m0: 24, m1: 47 },
 };
 
 export const GRAVEDAD = {
@@ -115,8 +115,61 @@ export function baseMask(D, st) {
   return out;
 }
 
-/** Devuelve el predicado espacial del ámbito seleccionado. */
-export function scopeTest(D, st) {
+/** Distancia máxima (m) entre un siniestro y el tramo para considerarlo «en el corredor». */
+export const TRAMO_BUFFER_M = 60;
+
+/**
+ * Máscara de los siniestros a menos de TRAMO_BUFFER_M de algún tramo del corredor, sin importar si hay una cámara cerca.
+ * Se calcula una vez por corredor, con una rejilla para no comparar cada punto contra todos los segmentos.
+ */
+export function corredorMask(D, corredor) {
+  D._corrMask ??= new Map();
+  if (D._corrMask.has(corredor)) return D._corrMask.get(corredor);
+  const { rows } = D;
+  const kx = 111320 * Math.cos((4.65 * Math.PI) / 180);
+  const ky = 110540;
+  const T = TRAMO_BUFFER_M;
+  const cell = 120;
+  const key = (cx, cy) => (cx + 200000) * 100000 + cy;
+  const segs = [];
+  const grid = new Map();
+  for (const t of D.geo.tramos) {
+    if (t.corredor !== corredor) continue;
+    for (const line of t.lines) {
+      for (let k = 1; k < line.length; k++) {
+        const s = [line[k - 1][0] * kx, line[k - 1][1] * ky, line[k][0] * kx, line[k][1] * ky];
+        const idx = segs.push(s) - 1;
+        const x0 = Math.floor((Math.min(s[0], s[2]) - T) / cell), x1 = Math.floor((Math.max(s[0], s[2]) + T) / cell);
+        const y0 = Math.floor((Math.min(s[1], s[3]) - T) / cell), y1 = Math.floor((Math.max(s[1], s[3]) + T) / cell);
+        for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) {
+          const kk = key(cx, cy);
+          if (!grid.has(kk)) grid.set(kk, []);
+          grid.get(kk).push(idx);
+        }
+      }
+    }
+  }
+  const mask = new Uint8Array(rows.n);
+  const T2 = T * T;
+  for (let i = 0; i < rows.n; i++) {
+    const px = rows.lon[i] * kx, py = rows.lat[i] * ky;
+    const cand = grid.get(key(Math.floor(px / cell), Math.floor(py / cell)));
+    if (!cand) continue;
+    for (const j of cand) {
+      const [ax, ay, bx, by] = segs[j];
+      const dx = bx - ax, dy = by - ay;
+      const l2 = dx * dx + dy * dy;
+      const u = l2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2)) : 0;
+      const ex = ax + u * dx - px, ey = ay + u * dy - py;
+      if (ex * ex + ey * ey <= T2) { mask[i] = 1; break; }
+    }
+  }
+  D._corrMask.set(corredor, mask);
+  return mask;
+}
+
+/** Predicado espacial por cercanía a las cámaras (sitio o corredor), sin la opción de ver todo el corredor. */
+function scopeCamara(D, st) {
   const { rows } = D;
   const R = st.radio;
   if (st.sitio) {
@@ -130,9 +183,18 @@ export function scopeTest(D, st) {
   return () => true;
 }
 
+/** Devuelve el predicado espacial del ámbito seleccionado. */
+export function scopeTest(D, st) {
+  if (st.corredor && !st.sitio && st.todoCorredor) {
+    const m = corredorMask(D, st.corredor);
+    return (i) => m[i] === 1;
+  }
+  return scopeCamara(D, st);
+}
+
 /** Zona de cámaras: si hay selección es el ámbito; si no, todo lo que está a <= radio de un sitio. */
 export function zonaTest(D, st) {
-  if (st.sitio || st.corredor) return scopeTest(D, st);
+  if (st.sitio || st.corredor) return scopeCamara(D, st);
   const { rows } = D;
   return (i) => rows.dc[i] <= st.radio;
 }
@@ -236,7 +298,7 @@ export function cambioPorGravedad(D, st) {
       zona,
       control,
       n,
-      tip: `<b>${GRAVEDAD[key].label}</b><br>Zona con cámara: ${fmtDec(zona.ma)} → ${fmtDec(zona.md)} por mes (${pct(zona.cambio)})<br>Control: ${fmtDec(control.ma)} → ${fmtDec(control.md)} por mes (${pct(control.cambio)})<br><span class="muted">N en la zona: ${n.toLocaleString('es-CO')}</span>`,
+      tip: `<b>${GRAVEDAD[key].label}</b><br>Zona con cámara: de ${fmtDec(zona.ma)} a ${fmtDec(zona.md)} siniestros por mes (${pct(zona.cambio)})<br>Control: de ${fmtDec(control.ma)} a ${fmtDec(control.md)} siniestros por mes (${pct(control.cambio)})<br><span class="muted">N en la zona: ${n.toLocaleString('es-CO')}</span>`,
     };
   });
 }
@@ -256,8 +318,8 @@ export function cambioPorCorredor(D, st) {
     const n = sumRange(meses, 0, 47);
     const sitios = geo.sitios.filter((s) => s.corredor === corredor).length;
     return {
-      corredor, ...ad, n, sitios,
-      tip: `<b>${corredor}</b> · ${sitios} sitio${sitios > 1 ? 's' : ''} de cámara<br>2019: ${fmtDec(ad.ma)} por mes · 2021–22: ${fmtDec(ad.md)} por mes<br>Cambio: <b>${pct(ad.cambio)}</b> · N = ${n.toLocaleString('es-CO')}<br><span class="muted">Siniestros a ≤ ${st.radio} m de las cámaras del corredor</span>`,
+      corredor, ...ad, n, sitios, meses,
+      tip: `<b>${corredor}</b>, ${sitios} sitio${sitios > 1 ? 's' : ''} de cámara<br>2019: ${fmtDec(ad.ma)} siniestros por mes<br>2021–22: ${fmtDec(ad.md)} siniestros por mes<br>Cambio: <b>${pct(ad.cambio)}</b> (N = ${n.toLocaleString('es-CO')})<br><span class="muted">Siniestros a ≤ ${st.radio} m de las cámaras del corredor</span>`,
     };
   });
 }
@@ -281,7 +343,7 @@ export function velocidadGravedadPorCorredor(D, st) {
     const speed = p85.reduce((a, b) => a + b, 0) / p85.length;
     return {
       corredor, speed, total: total[ci], fatal: fatal[ci], share: fatal[ci] / total[ci],
-      tip: `<b>${corredor}</b><br>Velocidad P85 media: ${fmtDec(speed)} km/h<br>Siniestros con muertos: ${fatal[ci]} de ${total[ci].toLocaleString('es-CO')} (${(100 * fatal[ci] / total[ci]).toFixed(1).replace('.', ',')} %)<br><span class="muted">Tramos con cámara · ≤ ${R} m</span>`,
+      tip: `<b>${corredor}</b><br>Velocidad P85 media: ${fmtDec(speed)} km/h<br>Siniestros con muertos: ${fatal[ci]} de ${total[ci].toLocaleString('es-CO')} (${(100 * fatal[ci] / total[ci]).toFixed(1).replace('.', ',')} %)<br><span class="muted">Tramos con cámara, a ≤ ${R} m</span>`,
     };
   }).filter(Boolean);
 }
