@@ -27,6 +27,8 @@ function focusStep(i: number) {
     const spot = document.querySelector(s.spot)
     if (spot) {
       if (spot instanceof HTMLDetailsElement) spot.open = true
+      // Secciones plegables (Collapsible): se abren pulsando su botón.
+      if (spot.getAttribute('data-state') === 'closed') spot.querySelector<HTMLButtonElement>('button')?.click()
       spot.classList.add('story-spot')
       spot.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' })
     }

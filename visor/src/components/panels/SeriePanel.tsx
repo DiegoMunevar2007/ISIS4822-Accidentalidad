@@ -6,6 +6,7 @@ import {
   INSTALACION, OPERACION, dayDate, fmtDia, gravLabel, nLabel, monthStartDay, nombreAmbito, nombreZona, ySiniestros, type Computed,
 } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
+import { Ayuda } from '@/components/charts/Ayuda'
 import { ChartLegend, type LegendItem } from '@/components/charts/bits'
 import { Seg } from '@/components/ui/seg'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -34,12 +35,14 @@ function tickFmt(d: number, gran: string) {
 }
 const legendDot = (c: string) => `<i class="dot" style="background:${c}"></i>`
 const monthTick = (m: number) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12])
-const COL_ANIO: Record<number, string> = { 2019: C.antes, 2020: C.y2020, 2021: C.y2021, 2022: C.y2022 }
+// Mismos colores que en "Siniestros por año": 2019 gris, 2020 gris claro y 2021 y 2022 rojo.
+const COL_ANIO: Record<number, string> = { 2019: C.antes, 2020: C.neutral, 2021: C.despues, 2022: C.despues }
 
 interface Block {
   title: string
   sub: string
   desc: string
+  help: string
   legend: ReactNode
   note: ReactNode
   main?: (el: HTMLDivElement) => void
@@ -84,13 +87,14 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     const gl = { mes: 'meses', semana: 'semanas', dia: 'días' }[gran]
     const bandas = [
       { x0: monthStartDay[12], x1: monthStartDay[24], label: 'Pandemia 2020', cls: 'pandemia', row: 0, align: 'end' },
-      { x0: INSTALACION[0], x1: INSTALACION[1], label: 'Instalación', cls: 'instalacion', row: 1 },
+      { x0: INSTALACION[0], x1: INSTALACION[1], label: 'Instalación de las cámaras', cls: 'instalacion', row: 1 },
     ]
     const xsIn = xs.filter((_, i) => inR[i])
     return {
       title: `Siniestros por ${{ mes: 'mes', semana: 'semana', dia: 'día' }[gran]}`,
       sub: `${fmtDia(r[0])} a ${fmtDia(r[1])}`,
-      desc: 'Muestra cómo cambian los siniestros con el tiempo y si hay un quiebre después de instalar las cámaras. La franja de abajo sirve para acercar un periodo.',
+      desc: 'Evolución de los siniestros en el tiempo.',
+      help: 'Cada punto es un mes (o una semana o un día, al acercar). La línea gris es el promedio de 2019. Bajo el gráfico, la cinta marca la instalación de las cámaras y la pandemia. La franja inferior sirve para acercar un periodo: arrastrar sobre ella; un clic fuera de la selección vuelve a mostrar todo.',
       legend: null,
       main: (el) => lineChart(el, {
         xs: xsIn,
@@ -98,8 +102,8 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         xDomain: r, yMax,
         xTicks: tickDays(r, gran), xTickFormat: (d: number) => tickFmt(d, gran),
         yLabel: ySiniestros(st),
-        bands: bandas,
-        vlines: [{ x: OPERACION, label: 'Multas desde may-2020', color: C.ink2, dash: true }],
+        bands: bandas, carriles: true,
+        vlines: [{ x: OPERACION, label: 'Multas desde may-2020', color: C.ink2 }],
         refLines: base2019 > 0 ? [{ y: base2019, label: 'Promedio de 2019', solid: true }] : [],
         tooltip: (i: number) => {
           const k = xs.findIndex((x) => x === xsIn[i])
@@ -122,8 +126,9 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     const yMax = Math.max(1, ...years.flatMap((y: number) => mesesDe(y)), ...mesesDe(2019))
     const etiqueta = (y: number) => `${y} (${y === 2019 ? 'antes' : y === 2020 ? 'transición' : 'después'})`
     const items: LegendItem[] = [
-      { label: 'Año del recuadro', color: C.despues },
-      ...(years.includes(2019) && years.length > 1 ? [{ label: '2019, como referencia', color: '#b4b9be' }] : []),
+      ...(years.includes(2019) ? [{ label: '2019 (antes)', color: C.antes }] : []),
+      ...(years.includes(2020) ? [{ label: '2020 (transición)', color: C.neutral }] : []),
+      ...(years.some((y: number) => y >= 2021) ? [{ label: '2021 y 2022 (después)', color: C.despues }] : []),
     ]
     // El primer recuadro lleva el eje Y; los demás lo comparten. Se compensa el ancho para que todos tengan el mismo área de trazado.
     const n = years.length
@@ -144,11 +149,11 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
                   left: idx === 0 ? 78 : 24, right: 16, yLabel: idx === 0 ? ySiniestros(st) : undefined,
                   xTicks: [0, 3, 6, 9], xTickFormat: (k: number) => MESES_CORTOS[k],
                   series: [
-                    ...(ghost ? [{ key: 'g', label: '2019', color: '#b4b9be', width: 1.75, ys: ghost }] : []),
+                    ...(ghost ? [{ key: 'g', label: '2019', color: C.antes, width: 1.5, ys: ghost }] : []),
                     { key: 'y', label: String(y), color: COL_ANIO[y], width: 2.5, ys },
                   ],
                   tooltip: (i: number) =>
-                    `<b>${MESES_CORTOS[i]}</b><br>${legendDot(COL_ANIO[y])} ${y}: <b>${fmt.int(ys[i])}</b>${ghost ? `<br>${legendDot('#b4b9be')} 2019: <b>${fmt.int(ghost[i])}</b>` : ''}`,
+                    `<b>${MESES_CORTOS[i]}</b><br>${legendDot(COL_ANIO[y])} ${y}: <b>${fmt.int(ys[i])}</b>${ghost ? `<br>${legendDot(C.antes)} 2019: <b>${fmt.int(ghost[i])}</b>` : ''}`,
                 })}
               />
             </div>
@@ -159,7 +164,8 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     return {
       title: 'Un año frente a otro',
       sub: 'Un recuadro por año, de enero a diciembre y con la misma escala',
-      desc: 'Permite comparar cada año con 2019, mes a mes, para ver si la forma del año cambió.',
+      desc: 'Cada año frente a 2019.',
+      help: 'Un recuadro por año, de enero a diciembre y con la misma escala vertical. Los colores son los de todo el visor: gris 2019, gris claro 2020 y rojo 2021 y 2022. En cada recuadro, la línea gris fina es 2019, de referencia.',
       legend: <ChartLegend items={items} />,
       custom,
       note: null,
@@ -180,7 +186,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     if (st.ctrlOn) series.push({ key: 'c', label: 'Sin cámara', color: C.ctrl, dash: true, ys: ci })
     const bandas = [
       { x0: 12, x1: 24, label: 'Pandemia 2020', cls: 'pandemia', row: 0, align: 'end' },
-      { x0: 10.6, x1: 14.9, label: 'Instalación', cls: 'instalacion', row: 1 },
+      { x0: 10.6, x1: 14.9, label: 'Instalación de las cámaras', cls: 'instalacion', row: 1 },
     ]
     const di = zi.map((v: number, i: number) => v - ci[i])
     const items: LegendItem[] = [
@@ -189,8 +195,9 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     ]
     return {
       title: 'Con cámara y sin cámara en el tiempo',
-      sub: 'Porcentaje del promedio mensual de 2019 (100 % = nivel de 2019), media móvil de 3 meses',
-      desc: 'Permite ver si los siniestros bajaron más cerca de las cámaras que en las vías sin cámara. Abajo, la diferencia entre ambas.',
+      sub: 'Porcentaje del nivel de 2019',
+      desc: 'Siniestros cerca de las cámaras frente a las vías sin cámara.',
+      help: 'Cada línea es el promedio mensual de siniestros como porcentaje del de 2019 (100 % = nivel de 2019), con media móvil de 3 meses. Abajo, la diferencia entre las dos líneas: sobre cero, el valor es más alto con cámara; bajo cero, más alto sin cámara.',
       legend: (
         <ChartLegend items={items}>
           <div className="legend-toggle">
@@ -203,20 +210,20 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         xs, series, xDomain: [P.m0, P.m1],
         yMax: Math.max(140, ...zi.slice(P.m0, P.m1 + 1), ...(st.ctrlOn ? ci.slice(P.m0, P.m1 + 1) : [0])),
         xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
-        yLabel: '% del nivel de 2019', yFormat: (v: number) => `${v} %`,
-        refLines: [{ y: 100, label: 'nivel de 2019' }], bands: bandas,
-        vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2, dash: true }],
+        yLabel: '% del nivel de 2019', yFormat: (v: number) => `${v}%`,
+        refLines: [{ y: 100, label: 'nivel de 2019' }], bands: bandas, carriles: true,
+        vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
         height: 260,
         tooltip: (i: number) =>
-          `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Con cámara: <b>${fmt.int(zi[i])} %</b> del nivel de 2019 (${fmt.int(K.mZona[i])} casos)${
-            st.ctrlOn ? `<br>${legendDot(C.ctrl)} Sin cámara: <b>${fmt.int(ci[i])} %</b> del nivel de 2019 (${fmt.int(K.mCtrl[i])} casos)` : ''}`,
+          `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Con cámara: <b>${fmt.int(zi[i])}%</b> del nivel de 2019 (${fmt.int(K.mZona[i])} siniestros)${
+            st.ctrlOn ? `<br>${legendDot(C.ctrl)} Sin cámara: <b>${fmt.int(ci[i])}%</b> del nivel de 2019 (${fmt.int(K.mCtrl[i])} siniestros)` : ''}`,
       }),
       context: st.ctrlOn ? (el) => diffChart(el, {
         xs, ds: di, xDomain: [P.m0, P.m1], height: 200,
         xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
-        yLabel: 'Diferencia (puntos)', bands: bandas,
+        yLabel: 'Diferencia (%)',
         labels: ['Más alto con cámara', 'Más alto sin cámara'],
-        tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>Con cámara ${fmt.int(zi[i])} %, sin cámara ${fmt.int(ci[i])} %<br>Diferencia: <b>${di[i] > 0 ? '+' : ''}${fmt.int(di[i])}</b> puntos porcentuales`,
+        tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>Con cámara ${fmt.int(zi[i])}%, sin cámara ${fmt.int(ci[i])}%<br>Diferencia: <b>${di[i] > 0 ? '+' : ''}${fmt.int(di[i])}</b> %`,
       }) : undefined,
       note: null,
     }
@@ -227,7 +234,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
   return (
     <section className="panel serie-panel" id="panel-serie">
       <header className="panel-head">
-        <div><h2>{blk.title}</h2><p className="sub" id="s-sub">{blk.sub}</p></div>
+        <div><h2>{blk.title}<Ayuda>{blk.help}</Ayuda></h2><p className="sub" id="s-sub">{blk.sub}</p></div>
         <div className="head-segs">
           <Seg small id="seg-modo" value={st.serieModo} onChange={(serieModo) => set({ serieModo })} options={modos} />
         </div>
@@ -250,27 +257,34 @@ function Velocidad({ K: _K }: { K: Computed }) {
   const v = velocidadDelAmbito(D, st)
   const xs = [...Array(N_MESES).keys()]
 
-  const desc = <p className="sub desc">Permite ver si el tráfico circula más lento donde hay cámara, frente a los tramos sin ella.</p>
-  const heading = (sub: string) => <h3 className="sec">Velocidad del tráfico <span id="v-sub">{sub}</span></h3>
+  const desc = <p className="sub desc">Velocidad del tráfico en los tramos con cámara y sin ella.</p>
+  const heading = () => (
+    <h3 className="sec">
+      Velocidad del tráfico
+      <Ayuda>P85 (percentil 85): el 85 % de los vehículos va a esa velocidad o más despacio. Se calcula cada mes con los tramos medidos por Bitcarrier. La línea horizontal es el límite de velocidad. La línea vertical marca el inicio de las multas.</Ayuda>
+    </h3>
+  )
 
   if (!v || (v.cam.n === 0 && v.sin.n === 0)) {
-    return <>{heading('')}{desc}<div id="v-chart" className="chart"><p className="muted">No existe información de velocidad para este corredor.</p></div></>
+    return <>{heading()}{desc}<div id="v-chart" className="chart"><p className="muted">No existe información de velocidad para este corredor.</p></div></>
   }
+  const sitio = v.fuente === 'sitio'
+  const nomCam = sitio ? nombreAmbito(D, st) : 'Con cámara'
+  const nomSin = sitio ? 'Resto de la vía, sin cámara' : 'Sin cámara'
   const series: any[] = []
-  if (v.cam.n) series.push({ key: 'c', label: 'Con cámara', color: C.cam, ys: v.cam.p85 })
-  if (v.sin.n) series.push({ key: 's', label: 'Sin cámara', color: C.ctrl, dash: true, ys: v.sin.p85 })
+  if (v.cam.n) series.push({ key: 'c', label: nomCam, color: C.cam, ys: v.cam.p85 })
+  if (v.sin.n) series.push({ key: 's', label: nomSin, color: C.ctrl, dash: true, ys: v.sin.p85 })
   if (!series.length) {
-    return <>{heading('')}{desc}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
+    return <>{heading()}{desc}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
   }
   const vals = series.flatMap((s) => s.ys.filter((x: number | null) => x != null)) as number[]
-  const sub = `P85 mensual en km/h, Bitcarrier, ${v.fuente === 'bogota' ? 'todos los tramos medidos' : v.fuente === 'sitio' ? 'tramos junto a este sitio vs. resto de la vía' : 'tramos de la vía con y sin cámara'}${st.velModo === 'cam' ? ', solo con cámara' : st.velModo === 'sin' ? ', solo sin cámara' : ''}`
   const items: LegendItem[] = [
-    ...(v.cam.n ? [{ label: `Tramos con cámara (${v.cam.n})`, color: C.cam }] : []),
-    ...(v.sin.n ? [{ label: `Tramos sin cámara (${v.sin.n})`, color: C.ctrl, dash: true }] : []),
+    ...(v.cam.n ? [{ label: sitio ? `${nomCam} (${v.cam.n} ${v.cam.n > 1 ? 'tramos' : 'tramo'})` : `Tramos con cámara (${v.cam.n})`, color: C.cam }] : []),
+    ...(v.sin.n ? [{ label: sitio ? `${nomSin} (${v.sin.n} tramos)` : `Tramos sin cámara (${v.sin.n})`, color: C.ctrl, dash: true }] : []),
   ]
   return (
     <>
-      {heading(sub)}
+      {heading()}
       {desc}
       <div className="serie-subhead">
         <div id="v-legend" className="flex-1"><ChartLegend items={items} /></div>
@@ -284,13 +298,13 @@ function Velocidad({ K: _K }: { K: Computed }) {
           xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
           yLabel: 'Velocidad P85 (km/h)',
           refLines: v.limite ? [{ y: v.limite, label: `límite ${v.limite} km/h` }] : [],
-          vlines: [{ x: 16, color: C.ink2, dash: true }],
+          vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
           height: 220, yFormat: (d: number) => d,
           tooltip: (i: number) =>
             `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label}: <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
         })}
       />
-      <p className="caveat" id="v-note">P85: velocidad por debajo de la cual circula el 85 % del tráfico.</p>
+      <p className="caveat" id="v-note">P85 (percentil 85): el 85 % de los vehículos va a esa velocidad o más despacio. Mide la velocidad alta habitual, no el promedio: 15 de cada 100 vehículos van más rápido.</p>
     </>
   )
 }

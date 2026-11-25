@@ -25,7 +25,7 @@ export function asignar(a: number[], b: number[], quien: Grupo, meses: number[],
 
 export const rango = (x: number, y: number) => Array.from({ length: Math.abs(y - x) + 1 }, (_, k) => Math.min(x, y) + k)
 
-/** «ene 2019 a dic 2019», un mes suelto o «5 meses sueltos». */
+/** "ene 2019 a dic 2019", un mes suelto o "5 meses sueltos". */
 export function etiquetaMeses(ms: number[]): string {
   if (ms.length === 0) return 'sin meses'
   const contiguo = ms[ms.length - 1] - ms[0] === ms.length - 1

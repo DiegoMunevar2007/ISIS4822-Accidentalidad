@@ -8,7 +8,7 @@ export interface State {
   corredor: string | null
   sitio: string | null
   periodo: 'todo' | 'antes' | 'transicion' | 'despues'
-  gravedad: 'fatal' | 'grave' | 'todos'
+  gravedad: 'fatal' | 'grave' | 'heridos' | 'todos'
   clases: Set<string>
   actor: string | null
   radio: number
@@ -17,15 +17,11 @@ export interface State {
   todoCorredor: boolean
   mapa: boolean
   serieModo: 'linea' | 'anios' | 'control'
-  banda: 'instalacion' | 'pandemia'
-  velModo: 'ambas' | 'cam' | 'sin'
   ctrlOn: boolean
   rango: [number, number] | null
-  /** Meses (0 a 47) de cada grupo en «Comparar meses»; ordenados, sin repetir y sin meses en común. */
+  /** Meses (0 a 47) de cada grupo en "Comparar meses"; ordenados, sin repetir y sin meses en común. */
   mesesA: number[]
   mesesB: number[]
-  /** Cómo se eligen: dos bandas arrastrables, o meses sueltos con clic y arrastre. */
-  abModo: 'bandas' | 'meses'
   /** Grupo al que van los meses elegidos en el modo de meses sueltos. */
   abClick: 'A' | 'B'
 }
@@ -51,13 +47,10 @@ export const defaults = (clases: Set<string> = new Set()): State => ({
   todoCorredor: false,
   mapa: true,
   serieModo: 'linea',
-  banda: 'instalacion',
-  velModo: 'ambas',
   ctrlOn: true,
   rango: null,
   mesesA: MESES_A_DEF,
   mesesB: MESES_B_DEF,
-  abModo: 'bandas',
   abClick: 'A',
 })
 

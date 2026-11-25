@@ -4,9 +4,12 @@ import { C, fmt, hideTip, lineChart, showTip, speedSeverityScatter } from '@/cha
 import { useStore } from '@/store'
 import { gravLabel, nLabel } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
+import { Ayuda } from '@/components/charts/Ayuda'
 import { Button } from '@/components/ui/button'
 import { Seg } from '@/components/ui/seg'
-import { TriangleAlert } from 'lucide-react'
+import { ChevronDown, TriangleAlert } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -17,7 +20,7 @@ import { useUi } from '@/ui-store'
 const N_BAJO = 10
 
 type Orden = 'dif' | 'n' | 'nombre'
-const pp = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${fmt.dec(v * 100)} p.p.`)
+const pp = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${fmt.dec(v * 100)}%`)
 
 export function PanoramaPanel({ visible }: { visible: boolean }) {
   const D = useStore((s) => s.D)!
@@ -40,7 +43,7 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
     .filter((c: any) => !(ocultarBajos && c.n < N_BAJO))
     .sort((a: any, b: any) =>
       orden === 'dif' ? a.dif - b.dif : orden === 'n' ? b.n - a.n : a.corredor.localeCompare(b.corredor, 'es'))
-  // La escala la fijan los corredores con casos suficientes; los demás se recortan en el borde.
+  // La escala la fijan los corredores con siniestros suficientes; los demás se recortan en el borde.
   const escala = Math.max(0.1, ...todos.filter((c: any) => c.n >= N_BAJO).map((c: any) => Math.abs(c.dif)))
   const sel = todos.find((c: any) => c.corredor === st.corredor) ?? [...todos].sort((a: any, b: any) => a.dif - b.dif)[0]
   const velGrav = velocidadGravedadPorCorredor(D, st)
@@ -53,10 +56,13 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
     <section className="panel panorama-panel" id="panel-panorama">
       <div id="pan-gravedad-wrap" className="pan-head">
         <div>
-          <h2 className="pan-title">Cambio por corredor</h2>
-          <p className="sub desc">
-            Permite ver en qué corredores los {nLabel(st)} bajaron más que en las vías sin cámara. Cada barra es el cambio del corredor menos el de esas vías, entre 2019 y 2021–22. Toda la zona con cámara: {pp(difGlobal)}.
-          </p>
+          <h2 className="pan-title">
+            Cambio por corredor
+            <Ayuda>
+              Cada barra es el cambio del promedio mensual de {nLabel(st)} a menos de {st.radio} m de las cámaras del corredor, de 2019 a 2021–22, menos el mismo cambio en las vías sin cámara de toda la ciudad ({fmt.pct(ctrl)}). A la izquierda, el corredor tuvo una mayor reducción que esas vías (bajó más o subió menos); a la derecha, una menor reducción (bajó menos o subió más). La miniatura muestra la evolución mensual de 2019 a 2022.
+            </Ayuda>
+          </h2>
+          <p className="sub desc">Cada corredor frente a las vías sin cámara, de 2019 a 2021–22. Zona con cámara en conjunto: {pp(difGlobal)}</p>
         </div>
       </div>
 
@@ -65,17 +71,22 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
           <div className="pan-tools">
             <div className="flex flex-wrap items-center gap-3">
               <Seg small label="Orden" prefix="Ordenar por" value={orden} onChange={setOrden}
-                options={[['dif', 'Diferencia'], ['n', 'Casos'], ['nombre', 'Nombre']]} />
+                options={[['dif', 'Diferencia'], ['n', 'Siniestros'], ['nombre', 'Nombre']]} />
               <div className="flex items-center gap-2">
                 <Checkbox id="chk-bajos" checked={ocultarBajos} onCheckedChange={(c) => setOcultarBajos(c === true)} />
-                <Label htmlFor="chk-bajos" className="cursor-pointer text-small font-normal">Ocultar los de pocos casos</Label>
+                <Label htmlFor="chk-bajos" className="cursor-pointer text-small font-normal">Ocultar los de pocos siniestros</Label>
               </div>
             </div>
           </div>
+          <p className="mb-2 flex items-center gap-2 text-small text-muted-foreground">
+            <i className="inline-block h-3 w-4 rounded-[2px] bg-[#F2D98A]" aria-hidden="true" />
+            Franja amarilla: instalación de las cámaras.
+          </p>
           <div className="pan-axis" aria-hidden="true">
-            <span>Menos casos que sin cámara</span>
-            <span>Más casos que sin cámara</span>
+            <span>Mayor reducción que en vías sin cámara</span>
+            <span>Menor reducción que en vías sin cámara</span>
           </div>
+          <ScrollArea className="max-h-[540px]">
           <ul className="pan-list" role="list">
             {lista.map((c: any) => {
               const bajo = c.n < N_BAJO
@@ -95,7 +106,7 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
                   >
                     <span className="pan-name">
                       {c.corredor}
-                      <small>{bajo ? `${c.n} casos (pocos)` : `${c.n} casos`}</small>
+                      <small>{bajo ? `${c.n} siniestros (pocos)` : `${c.n} siniestros`}</small>
                     </span>
                     <Mini meses={c.meses} />
                     <span className="pan-bar" aria-hidden="true">
@@ -107,35 +118,44 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
               )
             })}
           </ul>
-          {sinDato > 0 && <p className="note">{sinDato} corredor{sinDato > 1 ? 'es' : ''} sin casos en 2019: no tiene cambio calculable.</p>}
+          </ScrollArea>
+          {sinDato > 0 && <p className="note">{sinDato} corredor{sinDato > 1 ? 'es' : ''} sin siniestros en 2019: no tiene cambio calculable.</p>}
           {lista.length === 0 && <p className="note">Ningún corredor cumple el filtro.</p>}
         </div>
 
         {sel && <Detalle key={sel.corredor} sel={sel} ctrl={ctrl} />}
       </div>
 
-      <details className="pan-more" id="pan-vel-wrap">
-        <summary>Velocidad y gravedad por corredor</summary>
-        <p className="note">
-          Permite ver si los corredores más rápidos son también los más graves. Cada punto es un corredor: velocidad P85 de los tramos con cámara frente a la proporción de siniestros con muertos a menos de {st.radio} m.
-        </p>
-        <Chart id="pan-vel" draw={(el) => speedSeverityScatter(el, velGrav, { selected: sel?.corredor, onSelect: elegir })} />
-      </details>
+      <Collapsible className="pan-more" id="pan-vel-wrap">
+        <CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between text-left text-[1rem] font-bold">
+          Velocidad y gravedad por corredor
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <p className="note">
+            Un punto por corredor.
+            <Ayuda>Eje horizontal: velocidad P85 de los tramos con cámara del corredor. Eje vertical: proporción de siniestros con muertos a menos de {st.radio} m de las cámaras. No mide exposición: un corredor con más tráfico puede tener más siniestros.</Ayuda>
+          </p>
+          <Chart id="pan-vel" draw={(el) => speedSeverityScatter(el, velGrav, { selected: sel?.corredor, onSelect: elegir })} />
+        </CollapsibleContent>
+      </Collapsible>
     </section>
   )
 }
 
 /** Miniatura de la evolución mensual de un corredor (escala propia: muestra la forma, no el tamaño). */
 function Mini({ meses }: { meses: ArrayLike<number> }) {
-  const w = 104, h = 26
+  const w = 176, h = 42, plot = 24
   const n = meses.length
   const mx = Math.max(1, ...Array.from(meses))
   const x = (i: number) => 1 + (i / (n - 1)) * (w - 2)
-  const y = (v: number) => h - 2 - (v / mx) * (h - 4)
+  const y = (v: number) => plot - 2 - (v / mx) * (plot - 4)
   const d = Array.from(meses).map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('')
   return (
     <svg className="pan-mini" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
-      <rect x={x(10.6)} width={x(14.9) - x(10.6)} y="0" height={h} fill="#F2D98A" opacity="0.6" />
+      <rect x={x(10.6)} width={x(14.9) - x(10.6)} y="0" height={plot} fill="#F2D98A" opacity="0.6" />
+      <text x="1" y={h - 2} className="pan-mini-yr">2019</text>
+      <text x={w - 1} y={h - 2} textAnchor="end" className="pan-mini-yr">2022</text>
       <path d={d} fill="none" stroke="#B5283A" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   )
@@ -143,6 +163,7 @@ function Mini({ meses }: { meses: ArrayLike<number> }) {
 
 function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
   const set = useStore((s) => s.set)
+  const st = useStore((s) => s.st)
   const bajo = sel.n < N_BAJO
   const xs = [...Array(48).keys()]
   return (
@@ -150,37 +171,39 @@ function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <div>
           <h3>{sel.corredor}</h3>
-          <p className="muted">{sel.sitios} sitio{sel.sitios > 1 ? 's' : ''} de cámara, {fmt.int(sel.n)} casos en cuatro años</p>
+          <p className="muted">{sel.sitios} sitio{sel.sitios > 1 ? 's' : ''} de cámara, {fmt.int(sel.n)} siniestros en cuatro años</p>
         </div>
         <Button size="small" id="pan-ver" onClick={() => set({ tab: 'mapa', mapa: true, corredor: sel.corredor, sitio: null })}>
           Ver en el mapa
         </Button>
       </div>
-      <div className="grid gap-x-6 gap-y-3 @2xl:grid-cols-[minmax(260px,0.9fr)_minmax(0,1.3fr)]">
+      <div className="grid gap-x-6 gap-y-3 @2xl:grid-cols-[250px_minmax(0,1fr)]">
         <div className="flex flex-col gap-3">
           <dl className="pan-nums !m-0">
-            <div><dt>2019, por mes</dt><dd>{fmt.dec(sel.ma)}</dd></div>
-            <div><dt>2021–22, por mes</dt><dd>{fmt.dec(sel.md)}</dd></div>
-            <div><dt>Cambio</dt><dd>{fmt.pct(sel.cambio)}</dd><small>sin cámara {fmt.pct(ctrl)}</small></div>
-            <div><dt>Diferencia</dt><dd>{pp(sel.dif)}</dd></div>
+            <div><dt>2019</dt><dd>{fmt.dec(sel.ma)}</dd><small>{nLabel(st)} por mes</small></div>
+            <div><dt>2021–22</dt><dd>{fmt.dec(sel.md)}</dd><small>{nLabel(st)} por mes</small></div>
+            <div><dt>Cambio</dt><dd>{fmt.pct(sel.cambio)}</dd><small>vías sin cámara: {fmt.pct(ctrl)}</small></div>
+            <div><dt>Diferencia</dt><dd>{pp(sel.dif)}</dd><small>frente a vías sin cámara</small></div>
           </dl>
           {bajo && (
             <Alert className="border-border py-2">
               <TriangleAlert />
-              <AlertDescription className="text-small">Pocos casos: un mes de más o de menos mueve mucho el promedio.</AlertDescription>
+              <AlertDescription className="text-small">Pocos siniestros: un mes de más o de menos mueve mucho el promedio.</AlertDescription>
             </Alert>
           )}
         </div>
         <div>
-          <p className="text-small font-semibold">Siniestros por mes en el corredor</p>
-          <p className="mb-1 text-small text-muted-foreground">Permite ver si el corredor cambió tras la instalación.</p>
+          <p className="mb-1 text-small font-semibold">
+            Siniestros por mes en el corredor
+            <Ayuda>Evolución mensual del corredor de 2019 a 2022. La franja amarilla marca la instalación de las cámaras.</Ayuda>
+          </p>
           <Chart
             draw={(el) =>
               lineChart(el, {
                 xs, series: [{ key: 'c', label: sel.corredor, color: C.cam, ys: [...sel.meses] }], xDomain: [0, 47],
                 xTicks: xs.filter((m) => m % 12 === 0), xTickFormat: (m: number) => String(2019 + m / 12),
-                bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación' }], height: 150, top: 14, left: 34, points: false,
-                tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>${sel.meses[i]} casos`,
+                bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación de las cámaras', cls: 'instalacion' }], carriles: true, height: 176, top: 14, left: 34, points: false,
+                tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>${sel.meses[i]} siniestros`,
               })
             }
           />

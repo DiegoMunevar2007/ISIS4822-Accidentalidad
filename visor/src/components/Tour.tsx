@@ -15,23 +15,23 @@ interface Step {
 
 const STEPS: Step[] = [
   { sel: '#tabs', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Las vistas',
-    text: '«Mapa y cambios» muestra dónde están las cámaras y qué cambió con ellas; «Evolución» muestra la serie mes a mes; «Corredores» ordena los corredores por cambio; «Comparar meses» pone dos meses lado a lado.' },
+    text: '"Mapa y cambios" muestra dónde están las cámaras y qué cambió con ellas; "Evolución" muestra la serie mes a mes; "Corredores" ordena los corredores por cambio; "Comparar meses" pone dos meses lado a lado.' },
   { sel: '#map', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Elegir en el mapa',
     text: 'Cada círculo es un sitio de cámara. Con el cursor encima se ve cuántos siniestros tiene cerca, y un clic lo selecciona. Los tramos del corredor también admiten clic.' },
   { sel: '.f-corr', before: () => setState({ tab: 'mapa', corredor: 'Av. Boyacá', sitio: null }), title: 'O desde el menú',
     text: 'Se eligió Av. Boyacá como ejemplo. El menú de al lado permite bajar a un sitio de cámara.' },
   { sel: '#scope-line', title: '¿Qué se está contando?',
-    text: 'Aquí se resume el alcance: sitios y cámaras del ámbito, el radio alrededor de cada cámara y los filtros de «Más filtros». Se cuentan los siniestros dentro de ese radio, no toda la vía.' },
+    text: 'Aquí se resume el alcance: sitios y cámaras del ámbito, el radio alrededor de cada cámara y los filtros de "Más filtros". Se cuentan los siniestros dentro de ese radio, no toda la vía.' },
   { sel: '#filters', before: () => setState({ tab: 'mapa' }), title: 'Filtrar',
-    text: 'Periodo (antes de la instalación: 2019; instalación y pandemia: 2020; después: 2021–22) y gravedad. En «Más filtros» están el tipo de siniestro, el actor (moto, peatón…), el radio y las intersecciones ambiguas.' },
+    text: 'Periodo (antes de la instalación: 2019; instalación y pandemia: 2020; después: 2021–22) y gravedad. En "Más filtros" están el tipo de siniestro, el actor (moto, peatón…), el radio y las intersecciones ambiguas.' },
   { sel: '#panel-ficha', before: () => setState({ tab: 'mapa', mapa: true }), title: 'Con y sin cámara',
-    text: 'El panel compara el promedio mensual antes y después en la zona con cámara y en las vías sin cámara, que sirven de referencia (el control). La diferencia en puntos porcentuales es el dato principal.' },
+    text: 'El panel compara el promedio mensual antes y después en la zona con cámara y en las vías sin cámara, que sirven de referencia. La diferencia entre ambos cambios, en %, es el dato principal.' },
   { sel: '#btn-hide-map', title: 'Ocultar el mapa',
     text: 'Al ocultar el mapa, los cambios y la serie quedan lado a lado. El mapa se vuelve a mostrar desde la barra lateral.' },
   { sel: '#panel-serie', before: () => setState({ tab: 'serie', mapa: false, serieModo: 'anios' }), title: 'Evolución',
-    text: 'Con el cursor sobre la serie se ve cada mes. «Años superpuestos» pone un recuadro por año, con 2019 de referencia, «Con y sin cámara» compara los dos grupos frente al nivel de 2019 y, abajo, está la velocidad del tráfico.' },
+    text: 'Con el cursor sobre la serie se ve cada mes. "Años superpuestos" pone un recuadro por año, con 2019 de referencia, "Con y sin cámara" compara los dos grupos frente al nivel de 2019 y, abajo, está la velocidad del tráfico.' },
   { sel: '#panel-ab', before: () => setState({ tab: 'ab' }), title: 'Comparar meses',
-    text: 'Las bandas A y B se arrastran sobre el gráfico, o por sus bordes, para elegir los meses de cada una. La tabla compara el promedio mensual de siniestros, víctimas y velocidad entre ambas.' },
+    text: 'Un clic o un arrastre sobre las barras asigna meses al grupo A o B, y "Restablecer meses" vuelve a 2019 frente a 2021–22. La tabla compara el promedio mensual de siniestros, víctimas y velocidad entre ambas.' },
 ]
 
 export function startTour() {

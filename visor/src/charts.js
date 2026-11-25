@@ -95,6 +95,23 @@ function roundedTop(x, y, w, h, r) {
   return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
 }
 
+// ---------------------------------------------------------------- cinta de periodos
+/**
+ * Cinta de contexto pegada al eje X: una fila por periodo, con el rótulo dentro del tramo (o a su lado si no cabe).
+ * Comparte la posición horizontal con los datos, así que se lee sin desviar la mirada y no tapa nada.
+ */
+function cinta(svg, bands, tramos, y0) {
+  bands.forEach((b, k) => {
+    const [x0, x1] = tramos[k];
+    if (x1 <= x0) return;
+    const y = y0 + 20 * k;
+    svg.append('rect').attr('class', `cinta-seg ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', y).attr('height', 17).attr('rx', 3);
+    if (!b.label) return;
+    const cabe = x1 - x0 >= b.label.length * 7 + 12;
+    svg.append('text').attr('class', `cinta-txt${cabe ? '' : ' fuera'}`).attr('x', cabe ? x0 + 6 : x1 + 6).attr('y', y + 13).text(b.label);
+  });
+}
+
 // ---------------------------------------------------------------- gráfica de líneas genérica
 /**
  * opts: xs[], series[{key,label,color,dash,ys[]}], xDomain, xTicks, xTickFormat, yMax, yLabel,
@@ -104,21 +121,28 @@ export function lineChart(el, o) {
   el.innerHTML = '';
   const W = el.clientWidth || 600;
   const H = o.height ?? 280;
-  const m = { t: o.top ?? 30, r: o.right ?? (o.directLabels ? 104 : 16), b: o.xLabel ? 52 : 30, l: o.left ?? (o.yLabel ? 78 : 46) };
+  // carriles: cada periodo va en su propia fila sobre el gráfico, sin sombrear ni tapar la serie.
+  const nb = o.carriles ? (o.bands ?? []).length : 0;
+  const rib = nb ? 20 * nb + 6 : 0;
+  const m = { t: o.top ?? 30, r: o.right ?? (o.directLabels ? 104 : 16), b: (o.xLabel ? 52 : 30) + rib, l: o.left ?? (o.yLabel ? 78 : 46) };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
   const x = d3.scaleLinear(o.xDomain ?? d3.extent(o.xs), [m.l, W - m.r]);
   const allY = o.series.flatMap((s) => s.ys.filter((v) => v != null));
   const y = d3.scaleLinear([o.yMin ?? 0, o.yMax ?? (d3.max(allY) || 1)], [H - m.b, m.t]).nice(4);
 
+  if (o.carriles) {
+    cinta(svg, o.bands ?? [], (o.bands ?? []).map((b) => [Math.max(x(b.x0), m.l), Math.min(x(b.x1), W - m.r)]), H - m.b + 6);
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b).attr('stroke', C.grid);
+  }
   // bandas de contexto
-  for (const b of o.bands ?? []) {
+  for (const b of o.carriles ? [] : o.bands ?? []) {
     const x0 = Math.max(x(b.x0), m.l);
     const x1 = Math.min(x(b.x1), W - m.r);
     if (x1 <= x0) continue;
     svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
   }
   // Las etiquetas van después de todas las bandas para que ninguna las tape.
-  for (const b of o.bands ?? []) {
+  for (const b of o.carriles ? [] : o.bands ?? []) {
     const x0 = Math.max(x(b.x0), m.l);
     const x1 = Math.min(x(b.x1), W - m.r);
     if (b.label && x1 - x0 > 60) {
@@ -139,8 +163,8 @@ export function lineChart(el, o) {
     .attr('x', m.l - 4).attr('y', 0).attr('width', W - m.l - m.r + 8).attr('height', H - m.b + 4);
   const xa = d3.axisBottom(x).tickSize(4).tickFormat(o.xTickFormat ?? String);
   if (o.xTicks) xa.tickValues(o.xTicks.filter((t) => t >= x.domain()[0] && t <= x.domain()[1]));
-  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa)
-    .call((g) => g.select('.domain').attr('stroke', C.grid));
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b + rib})`).call(xa)
+    .call((g) => g.select('.domain').attr('stroke', rib ? 'none' : C.grid));
   if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
   if (o.xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 4)
     .attr('text-anchor', 'middle').text(o.xLabel);
@@ -228,7 +252,9 @@ export function monthBars(el, o) {
   el.innerHTML = '';
   const W = el.clientWidth || 700;
   const H = o.height ?? 270;
-  const m = { t: 56, r: 16, b: 38, l: 78 };
+  const nb = (o.bands ?? []).length;
+  const rib = 20 * nb + 6;
+  const m = { t: 40, r: 16, b: 38 + rib, l: 78 };
   const n = o.values.length;
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
   const x = d3.scaleBand(d3.range(n), [m.l, W - m.r]).padding(0.22);
@@ -239,15 +265,12 @@ export function monthBars(el, o) {
   const top = m.t - 6;
   const alto = H - m.b - top;
 
-  for (const b of o.bands ?? []) {
-    const x0 = m.l + b.x0 * step, x1 = m.l + (b.x1 + 1) * step;
-    svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', top).attr('height', alto);
-  }
   const yt = y.ticks(4).filter(Number.isInteger);
   svg.append('g').attr('class', 'grid').selectAll('line').data(yt).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y);
   svg.append('g').attr('class', 'axis').attr('transform', `translate(${m.l - 6},0)`)
     .call(d3.axisLeft(y).tickValues(yt).tickSize(0).tickFormat(fmt.int)).call((g) => g.select('.domain').remove());
-  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b).attr('stroke', C.grid);
+  svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b + rib})`)
     .call(d3.axisBottom(x).tickValues(d3.range(n).filter((i) => i % 3 === 0)).tickSize(4).tickFormat(o.xTickFormat ?? String))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
   if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
@@ -257,12 +280,7 @@ export function monthBars(el, o) {
     .attr('y', (d) => y(d)).attr('height', (d) => Math.max(0, y(0) - y(d)))
     .attr('fill', (d, i) => (enA.has(i) ? colorA : enB.has(i) ? colorB : '#d3d6d9'));
 
-  for (const b of o.bands ?? []) {
-    if (!b.label) continue;
-    const x0 = m.l + b.x0 * step, x1 = m.l + (b.x1 + 1) * step;
-    svg.append('text').attr('class', 'band-label').attr('x', b.align === 'end' ? x1 - 4 : x0 + 4).attr('y', m.t - 34)
-      .attr('text-anchor', b.align === 'end' ? 'end' : 'start').text(b.label);
-  }
+  cinta(svg, o.bands ?? [], (o.bands ?? []).map((b) => [m.l + b.x0 * step, m.l + (b.x1 + 1) * step]), H - m.b + 6);
 
   // Pasar el cursor por cualquier mes muestra su valor
   const cross = svg.append('rect').attr('fill', 'rgba(200,16,46,0.08)').attr('y', top).attr('height', alto).style('opacity', 0).attr('pointer-events', 'none');

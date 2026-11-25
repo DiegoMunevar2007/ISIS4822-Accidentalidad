@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "datos": "python3 ../scripts/build_data.py",
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "d3": "^7.9.2",
     "leaflet": "1.9",
     "lucide-react": "^1.79.0",

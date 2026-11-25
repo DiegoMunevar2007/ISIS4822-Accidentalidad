@@ -14,6 +14,7 @@ export const PERIODOS = {
 
 export const GRAVEDAD = {
   fatal: { label: 'siniestros con muertos', short: 'con muertos', min: 2 },
+  heridos: { label: 'siniestros con heridos y sin muertos', short: 'heridos', min: 1, max: 1 },
   grave: { label: 'siniestros con heridos o muertos', short: 'graves', min: 1 },
   todos: { label: 'todos los siniestros', short: 'todos', min: 0 },
 };
@@ -102,11 +103,12 @@ export function baseMask(D, st) {
   const { rows, meta } = D;
   const out = new Uint8Array(rows.n);
   const gmin = GRAVEDAD[st.gravedad].min;
+  const gmax = GRAVEDAD[st.gravedad].max ?? 9;
   const clases = new Uint8Array(meta.clases.length);
   meta.clases.forEach((k, i) => (clases[i] = st.clases.has(k) ? 1 : 0));
   const actorBit = st.actor ? 1 << meta.flags.indexOf(st.actor) : 0;
   for (let i = 0; i < rows.n; i++) {
-    if (rows.g[i] < gmin) continue;
+    if (rows.g[i] < gmin || rows.g[i] > gmax) continue;
     if (!clases[rows.c[i]]) continue;
     if (actorBit && !(rows.f[i] & actorBit)) continue;
     if (st.excluirCruce && rows.x[i]) continue;
@@ -115,7 +117,7 @@ export function baseMask(D, st) {
   return out;
 }
 
-/** Distancia máxima (m) entre un siniestro y el tramo para considerarlo «en el corredor». */
+/** Distancia máxima (m) entre un siniestro y el tramo para considerarlo "en el corredor". */
 export const TRAMO_BUFFER_M = 60;
 
 /**
@@ -199,7 +201,7 @@ export function zonaTest(D, st) {
   return (i) => rows.dc[i] <= st.radio;
 }
 
-/** Control: vías medidas por Bitcarrier, lejos (> radio) de cualquier cámara. */
+/** Vías sin cámara: tramos con velocidad medida, lejos (> radio) de cualquier cámara. */
 export function controlTest(D, st) {
   const { rows } = D;
   return (i) => rows.p[i] === 1 && rows.dc[i] > st.radio;
@@ -225,32 +227,33 @@ export const sumRange = (arr, a, b) => {
   return s;
 };
 
-/** Promedio mensual antes (2019) y después (2021–2022) y el cambio %. */
-export function antesDespues(meses) {
+/** Promedio mensual antes (2019) y después (por defecto 2021–2022, o la ventana indicada) y el cambio %. */
+export function antesDespues(meses, desde = 24, hasta = 47) {
   const antes = sumRange(meses, 0, 11);
-  const despues = sumRange(meses, 24, 47);
+  const despues = sumRange(meses, desde, hasta);
   const ma = antes / 12;
-  const md = despues / 24;
+  const md = despues / (hasta - desde + 1);
   return { antes, despues, ma, md, cambio: ma > 0 ? (md - ma) / ma : null };
 }
 
 /** Víctimas (heridas/muertas) por condición en antes/después dentro del ámbito. */
-export function victimasPorCondicion(D, mask, test, gravedad) {
+export function victimasPorCondicion(D, mask, test, gravedad, desde = 24, hasta = 47) {
   const V = D.victimas;
   const { rows } = D;
   const k = V.condiciones.length;
   const antes = new Float64Array(k);
   const despues = new Float64Array(k);
   const gmin = gravedad === 'fatal' ? 2 : 1;
+  const gmax = gravedad === 'heridos' ? 1 : 9;
   for (let j = 0; j < V.row.length; j++) {
-    if (V.grav[j] < gmin) continue;
+    if (V.grav[j] < gmin || V.grav[j] > gmax) continue;
     const i = V.row[j];
     if (!mask[i] || !test(i)) continue;
     const m = rows.m[i];
     if (m <= 11) antes[V.cond[j]] += V.cnt[j];
-    else if (m >= 24) despues[V.cond[j]] += V.cnt[j];
+    else if (m >= desde && m <= hasta) despues[V.cond[j]] += V.cnt[j];
   }
-  return V.condiciones.map((c, idx) => ({ condicion: c, antes: antes[idx], despues: despues[idx], ma: antes[idx] / 12, md: despues[idx] / 24 }));
+  return V.condiciones.map((c, idx) => ({ condicion: c, antes: antes[idx], despues: despues[idx], ma: antes[idx] / 12, md: despues[idx] / (hasta - desde + 1) }));
 }
 
 /** Sitios del ámbito actual. */
@@ -285,7 +288,7 @@ export function velocidadDelAmbito(D, st) {
 /** Cambio antes/después por nivel de gravedad, siempre para Bogotá (sin corredor ni sitio). */
 export function cambioPorGravedad(D, st) {
   const base = { ...st, corredor: null, sitio: null };
-  return ['fatal', 'grave', 'todos'].map((key) => {
+  return ['fatal', 'grave', 'heridos', 'todos'].map((key) => {
     const mask = baseMask(D, { ...base, gravedad: key });
     const zm = porMes(D, mask, zonaTest(D, base));
     const cm = porMes(D, mask, controlTest(D, base));
@@ -298,7 +301,7 @@ export function cambioPorGravedad(D, st) {
       zona,
       control,
       n,
-      tip: `<b>${GRAVEDAD[key].label}</b><br>Zona con cámara: de ${fmtDec(zona.ma)} a ${fmtDec(zona.md)} siniestros por mes (${pct(zona.cambio)})<br>Control: de ${fmtDec(control.ma)} a ${fmtDec(control.md)} siniestros por mes (${pct(control.cambio)})<br><span class="muted">N en la zona: ${n.toLocaleString('es-CO')}</span>`,
+      tip: `<b>${GRAVEDAD[key].label}</b><br>Zona con cámara: de ${fmtDec(zona.ma)} a ${fmtDec(zona.md)} siniestros por mes (${pct(zona.cambio)})<br>Vías sin cámara: de ${fmtDec(control.ma)} a ${fmtDec(control.md)} siniestros por mes (${pct(control.cambio)})<br><span class="muted">N en la zona: ${n.toLocaleString('es-CO')}</span>`,
     };
   });
 }

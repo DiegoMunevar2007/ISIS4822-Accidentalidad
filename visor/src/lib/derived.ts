@@ -31,7 +31,7 @@ export function nombreZona(D: Data, st: State): string {
   return `Zonas con cámara (≤ ${st.radio} m)`
 }
 export const gravLabel = (st: State): string => GRAVEDAD[st.gravedad].label
-/** Para frases con número delante: «377 siniestros», «12 siniestros con muertos». */
+/** Para frases con número delante: "377 siniestros", "12 siniestros con muertos". */
 export const nLabel = (st: State): string => (st.gravedad === 'todos' ? 'siniestros' : gravLabel(st))
 export const ySiniestros = (_st?: State): string => 'Cantidad de siniestros'
 
@@ -39,6 +39,7 @@ export const ySiniestros = (_st?: State): string => 'Cantidad de siniestros'
 export interface Computed {
   keyBase: string
   keyScope?: string
+  keyVict?: string
   mask: Uint8Array
   scope: (i: number) => boolean
   mScope: Float64Array
@@ -75,6 +76,13 @@ export function compute(D: Data, st: State): Computed {
   const keyBase = JSON.stringify([st.gravedad, [...st.clases], st.actor, st.excluirCruce])
   const keyScope = JSON.stringify([keyBase, st.corredor, st.sitio, st.radio, st.todoCorredor])
   if (cache.keyBase !== keyBase) cache = { keyBase, mask: baseMask(D, st) }
+  const keyVict = JSON.stringify([keyScope, st.periodo])
+  if (cache.keyVict !== keyVict) {
+    // Las víctimas se comparan contra 2019 con el periodo elegido como "después".
+    const [d0, d1] = st.periodo === 'transicion' ? [12, 23] : [24, 47]
+    cache.keyVict = keyVict
+    cache.vict = victimasPorCondicion(D, cache.mask as Uint8Array, zonaTest(D, st), st.gravedad, d0, d1)
+  }
   if (cache.keyScope !== keyScope) {
     const mask = cache.mask as Uint8Array
     const scope = scopeTest(D, st)
@@ -89,7 +97,6 @@ export function compute(D: Data, st: State): Computed {
     cache.mBogota = porMes(D, mask, () => true)
     const maskTodos = baseMask(D, { ...st, gravedad: 'todos' })
     cache.mScopeTodos = porMes(D, maskTodos, zona)
-    cache.vict = victimasPorCondicion(D, mask, zona, st.gravedad)
     cache.victMes = victimasMes(D, mask, zona)
     const R = st.radio
     const cnt = new Map<string, number>()

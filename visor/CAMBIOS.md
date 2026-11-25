@@ -193,7 +193,7 @@ Es la pieza con más iteraciones; cada versión corrigió la anterior:
 | 2. Barras | 48 barras con A y B coloreadas, valores escritos, guías punteadas | Las guías punteadas molestaron |
 | 3. Grupos de meses | Clic, Shift + clic y arrastre sobre barras para formar grupos A y B, atajos de años | «Un poco complicada»; la línea de promedio atravesaba las barras y estorbaba |
 | 4. Bandas | Dos bandas A y B arrastrables sobre el gráfico | Las manijas se veían muy gruesas; al usuario le gustaba poder seleccionar, pero resetear era difícil |
-| 5. Actual | Selector «Bandas / Meses sueltos» conservando ambas formas, «Restablecer meses» con ícono, «Vaciar el grupo», manijas de 3 px | — |
+| 5. Intermedia | Selector «Bandas / Meses sueltos» conservando ambas formas, «Restablecer meses» con ícono, «Vaciar el grupo», manijas de 3 px | — |
 
 **Decisiones del modelo actual**
 - A y B son **grupos de meses**; todo se compara como **promedio mensual**, para que grupos de distinto tamaño sean comparables, y la tabla indica cuántos meses tiene cada uno.
@@ -283,5 +283,42 @@ Se probó fusionar gráficas para reducir repetición: Comparar meses como modo 
 2. Control local por sitio y tabla de los 40 sitios.
 3. Leyenda flotante sobre el mapa y escala fija entre filtros.
 4. Revisar a mano los pasos del recorrido y la historia que no se volvieron a abrir.
-5. Limpiar del estado `velModo` y `banda`, que ya no tienen interfaz.
+5. ~~Limpiar del estado `velModo` y `banda`~~ (hecho, sección 17).
 6. Commitear los cambios sin guardar cuando se revisen.
+
+---
+
+## 17. Ajustes posteriores (sin commitear)
+
+Cambios hechos después de la sección 16, casi todos por pedido directo.
+
+| Área | Antes | Ahora | Por qué |
+|---|---|---|---|
+| Comparar meses | Selector «Bandas / Meses sueltos» | Solo meses sueltos (clic y arrastre) | Pedido: quitar bandas |
+| Periodos (instalación, pandemia) | Franjas sombreadas detrás de barras y líneas | **Cinta pegada al eje X**, una fila por periodo con el rótulo dentro del tramo, en Siniestros por mes, Con y sin cámara y Comparar meses | Las franjas tapaban datos y se solapaban; la cinta comparte el eje con los datos (Munzner: contexto cerca y alineado) |
+| Rótulo | «Instalación» | «Instalación de las cámaras» | Pedido |
+| Descripciones de gráficas | Párrafos largos que empezaban con «Permite…» | Una línea declarativa + icono de ayuda con la explicación de cómo leer la gráfica | Es un dashboard, no una guía |
+| Ayuda | Tooltip (solo con cursor) | Popover: cursor, foco, clic o toque | Que funcione en pantallas táctiles |
+| Ficha, Con y sin cámara y Víctimas | Siempre 2019 frente a 2021–22 | El periodo elegido es el «después»: 2020 compara 2019 con 2020; «Antes» muestra un aviso | El filtro de periodo no cambiaba nada |
+| Título de la ficha | «Antes y después» | «Cambio frente a 2019» | Ya no siempre es antes y después |
+| Barras de cambio (ficha) | Cero siempre al centro (media barra vacía) | Cero según los datos; si todo baja, usan todo el ancho | Aprovechar el ancho |
+| Gravedad | Con muertos, Heridos o muertos, Todos | Todos, Heridos, Heridos o muertos, Muertos (nuevo nivel «Heridos» sin muertos) | Pedido |
+| Corredores | Mapa a la derecha; miniatura de 104 px | Mapa siempre a la izquierda; miniatura de 176 px con «2019» y «2022» | Pedido; la franja amarilla sin años no se entendía |
+| Detalle de corredor | Cifras sin unidad («72,6») | «siniestros por mes» bajo cada cifra; gráfica más ancha con la cinta | «¿Pollos?» |
+| Diferencias | «p.p.» | «%», sin espacio | Pedido; formato único |
+| Línea de multas | Punteada y sin rótulo | Continua y con rótulo «Multas desde may-2020» | El punteado ya significa «sin cámara» |
+| Velocidad con un sitio elegido | «Tramos con cámara (37)» | Nombre del sitio y «Resto de la vía, sin cámara» | Pedido |
+| Tipos de siniestro | Otro entre medias | «Otro» al final | Pedido |
+| Comillas | « » | " " | Pedido |
+| «Quitar selección» | En la barra superior y dentro del mapa | Solo en el mapa; en la barra superior únicamente si el mapa está oculto | Duplicado |
+| Vocabulario | «control», «Bitcarrier», «casos» y «siniestros» mezclados | «vías sin cámara» y «siniestros» | Consistencia |
+| Cifras fijas | «109.137» escrito a mano | Calculado de los datos | Evitar cifras desfasadas |
+| Estado | `banda`, `velModo` sin interfaz | Eliminados | Código muerto |
+| Pantallas angostas | Pestañas cortadas a 640 px | Pestañas ajustadas (sin iconos a 640 px) | Responsive |
+| Ficha | Sección «Cámaras» | Eliminada | Pedido |
+| Corredor y Sitio | `Select` sin búsqueda | `Combobox` (Popover + `Command`, con búsqueda) | 18 corredores y 40 sitios son demasiados para recorrer a ojo |
+| Filtros en pantallas angostas | Cuatro selectores apilados antes del mapa | Botón «Filtros» que abre un `Sheet` inferior | Dejar el mapa a la vista en el móvil |
+| Lista de corredores | Lista de ~1.000 px que empujaba el detalle hacia abajo | `ScrollArea` de 540 px máximo | El detalle del corredor queda a la vista |
+| Velocidad y gravedad por corredor | `<details>` nativo | `Collapsible` | Mismo componente que el resto |
+
+**Pendiente:** el recorrido guiado y la historia no se volvieron a recorrer entera tras estos textos; la tabla de Comparar meses a 640 px requiere desplazamiento horizontal.

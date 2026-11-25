@@ -28,7 +28,7 @@ export function App() {
           <Skeleton className="h-6 w-2/3" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-40 w-full" />
-          <p className="m-0 font-sans text-small text-muted-foreground">Cargando 109.137 siniestros…</p>
+          <p className="m-0 font-sans text-small text-muted-foreground">Cargando los siniestros…</p>
         </div>
       </div>
     )

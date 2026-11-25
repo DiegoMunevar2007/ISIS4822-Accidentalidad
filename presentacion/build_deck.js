@@ -125,7 +125,7 @@ pres.addSection({ title: 'Contexto' });
 let s = pres.addSlide({ masterName: 'PORTADA', sectionTitle: 'Contexto' });
 s.addText('¿Las cámaras salvavidas realmente salvan vidas?', { placeholder: 'title' });
 s.addText('Visor interactivo de siniestralidad cerca de las cámaras de Bogotá, 2019–2022', { placeholder: 'body' });
-T(s, 'ISIS4822 · Visualización de datos', { x: 0.8, y: 1.3, w: 6, h: 0.4, fontSize: 14, color: C.background2, bold: true, charSpacing: 2 });
+T(s, 'ISIS4822 - Visual Analytics', { x: 0.8, y: 1.3, w: 6, h: 0.4, fontSize: 14, color: C.background2, bold: true, charSpacing: 2 });
 [[10.3, 1.6, 1.1], [11.7, 2.9, 0.55], [10.0, 3.6, 0.7], [11.2, 4.8, 0.9], [12.3, 1.2, 0.4], [9.6, 5.6, 0.45], [12.4, 5.9, 0.35]].forEach(([x, y, d]) => sitio(s, x, y, d, { dark: true }));
 s.addNotes('Pregunta del proyecto: ¿cerca de las cámaras salvavidas hubo menos siniestros graves después de instalarlas, comparado con vías similares sin cámara?');
 

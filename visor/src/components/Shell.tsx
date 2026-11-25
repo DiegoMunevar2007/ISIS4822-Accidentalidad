@@ -20,13 +20,17 @@ function Tip({ text, children }: { text: string; children: React.ReactElement })
 
 export function TopBar() {
   const set = useStore((s) => s.set)
+  const st = useStore((s) => s.st)
+  // Con el mapa visible, "Quitar selección" vive dentro del mapa.
+  const mapaVisible = st.tab !== 'ab' && st.mapa
+  const hayEleccion = !!(st.corredor || st.sitio)
   const fresh = useStore((s) => s.fresh)
   const openLanding = useUi((s) => s.openLanding)
   return (
     <header className="topbar mb-3 flex flex-wrap items-end justify-between gap-4 max-[640px]:items-start">
       <div className="brand">
         <h1>Cámaras salvavidas de Bogotá</h1>
-        <p className="hint">Siniestros y velocidad antes y después de la instalación, 2019 a 2022.</p>
+        <p className="hint">¿Bajaron los siniestros donde se instalaron cámaras?</p>
       </div>
       <TooltipProvider>
         <div className="top-actions flex gap-2">
@@ -36,9 +40,11 @@ export function TopBar() {
           <Tip text="Volver a la vista inicial">
             <Button id="btn-reset" onClick={() => set(fresh())}><RotateCcw className="size-4" />Reiniciar</Button>
           </Tip>
-          <Tip text="Volver a Bogotá">
-            <Button id="btn-clear" onClick={() => set({ corredor: null, sitio: null })}><X className="size-4" />Quitar selección</Button>
-          </Tip>
+          {hayEleccion && !mapaVisible && (
+            <Tip text="Volver a Bogotá">
+              <Button id="btn-clear" onClick={() => set({ corredor: null, sitio: null })}><X className="size-4" />Quitar selección</Button>
+            </Tip>
+          )}
           <Tip text="Ver el recorrido de bienvenida">
             <Button size="icon" id="btn-help" aria-label="Ayuda" onClick={openLanding}><CircleHelp className="size-4" /></Button>
           </Tip>
@@ -57,13 +63,13 @@ export function Tabs() {
   const set = useStore((s) => s.set)
   return (
     <UiTabs value={tab} onValueChange={(v) => set({ tab: v as Tab })} className="mb-4 max-[640px]:overflow-x-auto">
-      <TabsList variant="line" id="tabs" className="h-auto w-full justify-start gap-1 rounded-none border-b border-border p-0">
+      <TabsList variant="line" id="tabs" className="h-auto w-full justify-start gap-1 rounded-none border-b border-border p-0 max-[640px]:gap-0">
         {TABS.map(([v, l, Icon]) => (
           <TabsTrigger
             key={v}
             value={v}
             data-tab={v}
-            className="h-auto flex-none cursor-pointer rounded-none px-4 py-2.5 text-[1rem] font-semibold text-muted-foreground hover:text-foreground data-[state=active]:text-foreground after:!bottom-[-1px] after:!h-[3px] after:!bg-primary"
+            className="h-auto flex-none cursor-pointer rounded-none max-[640px]:!px-2.5 max-[640px]:!text-[0.9375rem] max-[640px]:[&>svg]:hidden focus-visible:!border-transparent focus-visible:!shadow-none focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!bg-muted px-4 py-2.5 text-[1rem] font-semibold text-muted-foreground hover:text-foreground data-[state=active]:text-foreground after:!bottom-[-1px] after:!h-[3px] after:!bg-primary"
           >
             <Icon className="size-4" />
             {l}
@@ -77,7 +83,7 @@ export function Tabs() {
 export function ScopeLine({ K: _K }: { K: Computed }) {
   const D = useStore((s) => s.D)!
   const st = useStore((s) => s.st)
-  // Solo lo que los selectores de arriba no dicen: tamaño del ámbito, radio y filtros de «Más filtros».
+  // Solo lo que los selectores de arriba no dicen: tamaño del ámbito, radio y filtros de "Más filtros".
   const sitios = st.tab === 'panorama' ? D.geo.sitios : sitiosDelAmbito(D, st)
   const nCam = sitios.reduce((a: number, s: { n_camaras: number }) => a + s.n_camaras, 0)
   const clases = st.clases.size === D.meta.clases.length ? null : [...st.clases].map((c) => CLASE_LABEL[c as keyof typeof CLASE_LABEL]).join(', ')

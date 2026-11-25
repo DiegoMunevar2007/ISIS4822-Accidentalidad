@@ -43,7 +43,7 @@ export interface PBRow {
   max?: number
 }
 
-/** Barras horizontales pareadas (antes azul / después rojo). */
+/** Barras horizontales pareadas (antes gris / después rojo). */
 export function PairedBars({ rows, max, fmtVal = fmt.dec }: { rows: PBRow[]; max?: number; fmtVal?: (v: number) => string }) {
   const mx = max ?? Math.max(1, ...rows.map((r) => Math.max(r.a, r.b)))
   return (
@@ -85,25 +85,29 @@ export interface ChangeRow {
   detail: string
   tip?: string
   icon?: LucideIcon
-  /** Pocos casos: la barra se dibuja con trama, igual que en la lista de corredores. */
+  /** Pocos siniestros: la barra se dibuja con trama, igual que en la lista de corredores. */
   bajo?: boolean
 }
 
 /** Cambio porcentual de varias filas en una misma escala, con barras que parten de cero. */
 export function ChangeBars({ rows }: { rows: ChangeRow[] }) {
-  const mx = Math.max(0.1, ...rows.map((r) => Math.abs(r.cambio ?? 0)))
+  // El cero se coloca según los datos: si todo baja, las barras usan todo el ancho hacia la izquierda.
+  const vals = rows.map((r) => r.cambio ?? 0)
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals)
+  const span = Math.max(0.1, hi - lo)
+  const zero = (-lo / span) * 100
   return (
     <div className="cb">
       {rows.map((r) => {
-        const w = r.cambio == null ? 0 : (Math.abs(r.cambio) / mx) * 50
+        const w = r.cambio == null ? 0 : (Math.abs(r.cambio) / span) * 100
         return (
           <div key={r.label} className={`cb-row${r.bajo ? ' low' : ''}`} onMouseMove={r.tip ? (ev) => showTip(r.tip, ev.nativeEvent) : undefined} onMouseLeave={hideTip}>
             <div className="cb-label">
               <span className="flex items-center gap-1.5">{r.icon && <r.icon className="size-4 shrink-0 text-primary" aria-hidden="true" />}{r.label}</span>
-              <small>{r.detail}{r.bajo ? ', pocos casos' : ''}</small>
+              <small>{r.detail}{r.bajo ? ', pocos siniestros' : ''}</small>
             </div>
-            <div className="cb-track" aria-hidden="true">
-              <i style={{ background: r.color, ...((r.cambio ?? 0) < 0 ? { right: '50%' } : { left: '50%' }), width: `${w}%` }} />
+            <div className="cb-track" aria-hidden="true" style={{ '--zero': `${zero}%` } as React.CSSProperties}>
+              <i style={{ background: r.color, ...((r.cambio ?? 0) < 0 ? { right: `${100 - zero}%` } : { left: `${zero}%` }), width: `${w}%` }} />
             </div>
             <div className="cb-val">{fmt.pct(r.cambio)}</div>
           </div>

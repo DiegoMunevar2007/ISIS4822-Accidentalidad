@@ -5,6 +5,7 @@ import { ArrowLeftRight, RotateCcw, X } from 'lucide-react'
 import { MESES_A_DEF, MESES_B_DEF, useStore } from '@/store'
 import { gravLabel, nLabel, nombreZona, ySiniestros, type Computed } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
+import { Ayuda } from '@/components/charts/Ayuda'
 import { Button } from '@/components/ui/button'
 import { Seg } from '@/components/ui/seg'
 import { asignar, cuantosMeses, etiquetaMeses, promedio, rango } from '@/lib/grupos'
@@ -58,14 +59,6 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
     },
   ]
   const vacio = mesesA.length === 0 || mesesB.length === 0
-  // Las bandas solo representan tramos continuos: al volver a ellas cada grupo se reduce a su rango, y si chocan se restablece.
-  const cambiarModo = (abModo: 'bandas' | 'meses') => {
-    if (abModo === 'meses') return set({ abModo })
-    const a = mesesA.length ? rango(mesesA[0], mesesA[mesesA.length - 1]) : MESES_A_DEF
-    const b = mesesB.length ? rango(mesesB[0], mesesB[mesesB.length - 1]) : MESES_B_DEF
-    const choca = a.some((m) => b.includes(m))
-    set(choca ? { abModo, mesesA: MESES_A_DEF, mesesB: MESES_B_DEF } : { abModo, mesesA: a, mesesB: b })
-  }
   const igual = (x: number[], y: number[]) => x.length === y.length && x.every((m, i) => m === y[i])
   const restablecido = igual(mesesA, MESES_A_DEF) && igual(mesesB, MESES_B_DEF)
 
@@ -73,16 +66,14 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
     <section className="panel ab-panel" id="panel-ab">
       <header className="panel-head">
         <div>
-          <h2>Comparar meses</h2>
-          <p className="sub">
-            {st.abModo === 'bandas'
-              ? 'Arrastrar las bandas A y B sobre el gráfico, o sus bordes, para elegir los meses de cada una.'
-              : `Clic o arrastre sobre las barras para elegir los meses del grupo ${st.abClick}. Shift + clic extiende desde el último mes.`}
-          </p>
+          <h2>
+            Comparar meses
+            <Ayuda>
+              Elegir el grupo (A o B) y hacer clic o arrastrar sobre las barras para asignarle meses; Shift + clic extiende desde el último mes. La tabla compara el promedio mensual de cada grupo y el cambio de A a B.
+            </Ayuda>
+          </h2>
         </div>
         <div className="head-segs">
-          <Seg small id="seg-ab-modo" label="Cómo elegir los meses" prefix="Selección" value={st.abModo} onChange={cambiarModo}
-            options={[['bandas', 'Bandas'], ['meses', 'Meses sueltos']]} />
           <Button size="small" id="btn-swap" title="Intercambiar A y B" onClick={() => set({ mesesA: mesesB, mesesB: mesesA })}>
             <ArrowLeftRight className="size-4" /> Intercambiar A y B
           </Button>
@@ -91,23 +82,21 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
           </Button>
         </div>
       </header>
-      <p className="sub desc mb-2">Permite comparar dos grupos de meses, por ejemplo antes y después de la instalación, en siniestros, víctimas, cámaras y velocidad.</p>
-      {st.abModo === 'meses' && (
-        <div className="mb-2 flex flex-wrap items-center gap-3" id="ab-meses-sueltos">
-          <Seg small id="seg-click" prefix="Elegir para" value={st.abClick} onChange={(abClick) => set({ abClick })} options={[['A', 'Grupo A'], ['B', 'Grupo B']]} />
-          <Button size="small" variant="ghost" onClick={() => set(st.abClick === 'A' ? { mesesA: [] } : { mesesB: [] })} disabled={(st.abClick === 'A' ? mesesA : mesesB).length === 0}>
-            <X className="size-4" /> Vaciar el grupo {st.abClick}
-          </Button>
-        </div>
-      )}
+      <p className="sub desc mb-2">Dos grupos de meses frente a frente.</p>
+      <div className="mb-2 flex flex-wrap items-center gap-3" id="ab-meses-sueltos">
+        <Seg small id="seg-click" prefix="Elegir para" value={st.abClick} onChange={(abClick) => set({ abClick })} options={[['A', 'Grupo A'], ['B', 'Grupo B']]} />
+        <Button size="small" variant="ghost" onClick={() => set(st.abClick === 'A' ? { mesesA: [] } : { mesesB: [] })} disabled={(st.abClick === 'A' ? mesesA : mesesB).length === 0}>
+          <X className="size-4" /> Vaciar el grupo {st.abClick}
+        </Button>
+      </div>
       <Chart
         id="ab-serie"
         draw={(el) => monthBars(el, {
-          values: [...K.mZona], grupoA: mesesA, grupoB: mesesB, modo: st.abModo, activo: st.abClick, yLabel: ySiniestros(st), height: 280,
+          values: [...K.mZona], grupoA: mesesA, grupoB: mesesB, modo: 'meses', activo: st.abClick, yLabel: ySiniestros(st), height: 280,
           xTickFormat: (m: number) => (m % 12 === 0 ? String(2019 + m / 12) : MESES_CORTOS[m % 12]),
           bands: [
             { x0: 12, x1: 23, label: 'Pandemia 2020', cls: 'pandemia', align: 'end' },
-            { x0: 10, x1: 14, label: 'Instalación', cls: 'instalacion' },
+            { x0: 10, x1: 14, label: 'Instalación de las cámaras', cls: 'instalacion' },
           ],
           tooltip: (i: number) => {
             const g = mesesA.includes(i) ? 'A' : mesesB.includes(i) ? 'B' : null
@@ -115,7 +104,10 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
           },
           resumen: (letra: 'A' | 'B', ancho: number) => {
             const p = prom(K.mZona, letra === 'A' ? mesesA : mesesB)
-            return ancho > 120 ? `${letra} ${dec(p)} por mes` : `${letra} ${dec(p)}`
+            const n = nLabel(st)
+            if (ancho > 130 + n.length * 7) return `${letra}: promedio de ${dec(p)} ${n} al mes`
+            if (ancho > 90 + n.length * 7) return `${letra}: ${dec(p)} ${n} al mes`
+            return ancho > 70 ? `${letra}: ${dec(p)} al mes` : `${letra} ${dec(p)}`
           },
           onRange: (letra: 'A' | 'B', d: number, h: number) => set(letra === 'A' ? { mesesA: rango(d, h) } : { mesesB: rango(d, h) }),
           onPick: (idx: number[], info: { shift: boolean; arrastre: boolean }) => {
