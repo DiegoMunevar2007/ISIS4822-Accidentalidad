@@ -55,7 +55,7 @@ export const STEPS: StepDef[] = [
   {
     act: 0, title: 'Dónde están las cámaras',
     body: () => <>Entre noviembre de 2019 y marzo de 2020 Bogotá instaló 92 cámaras en 40 sitios de 18 corredores. En el mapa, cada círculo es un sitio y su tamaño indica cuántas cámaras tiene. Las vías sin cámara, a más de 500 m de cualquier cámara, sirven de referencia.</>,
-    hint: 'Con el cursor sobre un sitio se ven su corredor y sus cámaras.',
+    hint: 'Al señalar un sitio del mapa aparecen su corredor y sus cámaras.',
     patch: (f) => ({ ...f, tab: 'mapa', mapa: true, gravedad: 'fatal' }),
     focus: ['#panel-map', '#panel-ficha'], spot: '#map',
   },
@@ -83,7 +83,7 @@ export const STEPS: StepDef[] = [
       const p = por(/^peat/), m = por(/^moto/), c = por(/^cicl/)
       return <>Con muertos, el promedio mensual de víctimas en la zona con cámara cambió {pct(p?.cambio)} entre peatones, {pct(m?.cambio)} entre motociclistas y {pct(c?.cambio)} entre ciclistas, de 2019 a 2021–22. Son promedios mensuales y en varias filas hay pocos siniestros.</>
     },
-    hint: 'Con el cursor sobre una fila se ve el detalle.',
+    hint: 'Al señalar una fila aparece su detalle.',
     patch: (f) => ({ ...f, tab: 'mapa', mapa: true, gravedad: 'fatal' }),
     focus: ['#panel-ficha'], spot: '#f-vict',
   },

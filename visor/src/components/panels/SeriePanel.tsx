@@ -94,8 +94,8 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
       title: `Siniestros por ${{ mes: 'mes', semana: 'semana', dia: 'día' }[gran]}`,
       sub: `${fmtDia(r[0])} a ${fmtDia(r[1])}`,
       desc: 'Evolución de los siniestros en el tiempo.',
-      help: 'Cada punto es un mes (o una semana o un día, al acercar). La línea gris es el promedio de 2019. Bajo el gráfico, la cinta marca la instalación de las cámaras y la pandemia. La franja inferior sirve para acercar un periodo: arrastrar sobre ella; un clic fuera de la selección vuelve a mostrar todo.',
-      legend: null,
+      help: 'Cada punto es un mes (o una semana o un día, al acercar). La línea punteada oscura es el promedio de 2019. Bajo el gráfico, la cinta marca la instalación de las cámaras y la pandemia. La franja inferior sirve para acercar un periodo: arrastrar sobre ella; un clic fuera de la selección vuelve a mostrar todo.',
+      legend: base2019 > 0 ? <ChartLegend items={[{ label: nombreAmbito(D, st), color: C.cam }, { label: 'Promedio de 2019', color: C.ink, dash: true }]} /> : null,
       main: (el) => lineChart(el, {
         xs: xsIn,
         series: [{ key: 'z', label: nombreAmbito(D, st), color: C.cam, ys: ys.filter((_, i) => inR[i]) }],
@@ -104,7 +104,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         yLabel: ySiniestros(st),
         bands: bandas, carriles: true,
         vlines: [{ x: OPERACION, label: 'Multas desde may-2020', color: C.ink2 }],
-        refLines: base2019 > 0 ? [{ y: base2019, label: 'Promedio de 2019', solid: true }] : [],
+        refLines: base2019 > 0 ? [{ y: base2019 }] : [],
         tooltip: (i: number) => {
           const k = xs.findIndex((x) => x === xsIn[i])
           const dif = base2019 > 0 ? (ys[k] - base2019) / base2019 : null
@@ -199,7 +199,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
       desc: 'Siniestros cerca de las cámaras frente a las vías sin cámara.',
       help: 'Cada línea es el promedio mensual de siniestros como porcentaje del de 2019 (100 % = nivel de 2019), con media móvil de 3 meses. Abajo, la diferencia entre las dos líneas: sobre cero, el valor es más alto con cámara; bajo cero, más alto sin cámara.',
       legend: (
-        <ChartLegend items={items}>
+        <ChartLegend items={[...items, { label: 'Nivel de 2019', color: C.ink, dash: true }]}>
           <div className="legend-toggle">
             <Checkbox id="chk-ctrl" checked={st.ctrlOn} onCheckedChange={(c) => set({ ctrlOn: c === true })} />
             <Label htmlFor="chk-ctrl" className="cursor-pointer text-small font-normal">Mostrar vías sin cámara</Label>
@@ -211,7 +211,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         yMax: Math.max(140, ...zi.slice(P.m0, P.m1 + 1), ...(st.ctrlOn ? ci.slice(P.m0, P.m1 + 1) : [0])),
         xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
         yLabel: '% del nivel de 2019', yFormat: (v: number) => `${v}%`,
-        refLines: [{ y: 100, label: 'nivel de 2019' }], bands: bandas, carriles: true,
+        refLines: [{ y: 100 }], bands: bandas, carriles: true,
         vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
         height: 260,
         tooltip: (i: number) =>
@@ -278,6 +278,22 @@ function Velocidad({ K: _K }: { K: Computed }) {
     return <>{heading()}{desc}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
   }
   const vals = series.flatMap((s) => s.ys.filter((x: number | null) => x != null)) as number[]
+  // Tramos de meses seguidos sin dato, dentro del periodo elegido.
+  const rachas = (falta: (m: number) => boolean) => {
+    const out: [number, number][] = []
+    for (let m = P.m0; m <= P.m1; m++) {
+      if (!falta(m)) continue
+      const u = out[out.length - 1]
+      if (u && u[1] === m - 1) u[1] = m
+      else out.push([m, m])
+    }
+    return out
+  }
+  const huecos = rachas((m) => series.every((s) => s.ys[m] == null))
+  const faltantes = series
+    .map((s) => ({ nombre: s.label as string, r: rachas((m) => s.ys[m] == null) }))
+    .filter((f) => f.r.length)
+    .map((f) => `${f.nombre} (${f.r.map(([a, b]) => (a === b ? mesLabel(a) : `${mesLabel(a)} a ${mesLabel(b)}`)).join('; ')})`)
   // Cada serie menos su propio promedio de 2019 (media móvil de 3 meses); la diferencia es con menos sin cámara.
   const media = (a: (number | null)[]) => {
     const f = a.filter((x): x is number => x != null)
@@ -298,6 +314,8 @@ function Velocidad({ K: _K }: { K: Computed }) {
   const items: LegendItem[] = [
     ...(v.cam.n ? [{ label: sitio ? `${nomCam} (${v.cam.n} ${v.cam.n > 1 ? 'tramos' : 'tramo'})` : `Tramos con cámara (${v.cam.n})`, color: C.cam }] : []),
     ...(v.sin.n ? [{ label: sitio ? `${nomSin} (${v.sin.n} tramos)` : `Tramos sin cámara (${v.sin.n})`, color: C.ctrl, dash: true }] : []),
+    ...(v.limite ? [{ label: `Límite de ${v.limite} km/h`, color: C.ink, dash: true }] : []),
+    ...(huecos.length ? [{ label: 'Sin datos', color: '#e9e9e5', area: true }] : []),
   ]
   return (
     <>
@@ -314,13 +332,15 @@ function Velocidad({ K: _K }: { K: Computed }) {
           yMax: Math.ceil((Math.max(...vals, v.limite ?? 0) + 3) / 5) * 5,
           xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
           yLabel: 'Velocidad P85 (km/h)',
-          refLines: v.limite ? [{ y: v.limite, label: `límite ${v.limite} km/h` }] : [],
+          refLines: v.limite ? [{ y: v.limite }] : [],
+          huecos,
           vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
           height: 220, yFormat: (d: number) => d,
           tooltip: (i: number) =>
             `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label} <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
         })}
       />
+      {faltantes.length > 0 && <p className="note mb-2" id="v-faltan">Hay meses sin datos de velocidad en {faltantes.join(' y ')}.</p>}
       {dif ? (
         <>
           <p className="mb-1 mt-5 text-small font-semibold">

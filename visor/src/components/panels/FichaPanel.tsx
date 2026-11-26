@@ -42,7 +42,7 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
             Cada barra es el cambio del promedio mensual de {nLabel(st)} frente a 2019. La zona con cámara son los siniestros a menos de {st.radio} m de una cámara; las vías sin cámara son el resto de la ciudad y sirven de referencia.
           </Ayuda>
         </h3>
-        <p className="sub desc">Cambio del promedio mensual entre 2019 y {dLab}.</p>
+        {!sinCambio && <p className="sub desc">Cambio del promedio mensual entre 2019 y {dLab}.</p>}
         {sinCambio ? (
           <Alert className="mt-2 border-border">
             <Info />
@@ -73,6 +73,11 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
         Siniestros por año <span>N = {fmt.int(N)} en {years.length} año{years.length > 1 ? 's' : ''}</span>
         <Ayuda>Cada barra es el total de {nLabel(st)} de un año. 2020 va aparte, en gris claro, por la pandemia y la instalación de las cámaras.</Ayuda>
       </h3>
+      {years.length === 1 ? (
+        <p className="m-0 mt-1" id="f-anual">
+          <b className="text-kpi">{fmt.int(N)}</b> {nLabel(st)} en {years[0]}, es decir, {fmt.dec(N / 12)} por mes.
+        </p>
+      ) : (<>
       <p className="sub desc">Total de {nLabel(st)} por año.</p>
       <Chart
         id="f-anual"
@@ -85,15 +90,18 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
           })
         }
       />
+      </>)}
       <h3 className="sec">
         Víctimas por condición
         <Ayuda>Cada tipo de usuario tiene dos barras: el promedio mensual de víctimas en 2019 y en {dLab}. El porcentaje de la derecha es el cambio entre ambas.</Ayuda>
       </h3>
+      {!sinCambio && (<>
       <p className="sub desc">Promedio mensual de víctimas por tipo de usuario.</p>
       <div className="legend-inline">
         <span><i style={{ background: C.antes }} />2019</span>
         <span><i style={{ background: C.despues }} />{dLab}</span>
       </div>
+      </>)}
       <div id="f-vict">
         {sinCambio ? (
           <p className="muted">Este periodo es anterior a la instalación, así que no hay víctimas posteriores con qué comparar.</p>

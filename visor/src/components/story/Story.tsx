@@ -102,13 +102,13 @@ export function Story() {
           </div>
         )}
         {s.hint && (
-          <Alert id="story-hint" className="border-accent bg-accent text-accent-foreground">
+          <Alert id="story-hint" className="border-border">
             <MousePointerClick />
-            <AlertDescription className="text-body text-accent-foreground">{s.hint}</AlertDescription>
+            <AlertDescription className="text-small">{s.hint}</AlertDescription>
           </Alert>
         )}
         {offTrack && !s.allowAll && (
-          <Alert id="story-warn">
+          <Alert id="story-warn" className="border-border">
             <TriangleAlert />
             <AlertDescription className="text-small">
               Cambió la vista y el texto describe el paso {i + 1}.{' '}

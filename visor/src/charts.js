@@ -108,7 +108,9 @@ function cinta(svg, bands, tramos, y0) {
     svg.append('rect').attr('class', `cinta-seg ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', y).attr('height', 17).attr('rx', 3);
     if (!b.label) return;
     const cabe = x1 - x0 >= b.label.length * 7 + 12;
-    svg.append('text').attr('class', `cinta-txt${cabe ? '' : ' fuera'}`).attr('x', cabe ? x0 + 6 : x1 + 6).attr('y', y + 13).text(b.label);
+    const t = svg.append('text').attr('class', `cinta-txt${cabe ? '' : ' fuera'}`).attr('x', cabe ? x0 + 6 : x1 + 6).attr('y', y + 13).text(b.label);
+    // Si a la derecha del tramo no hay espacio, el rótulo pasa a la izquierda para no quedar cortado.
+    if (!cabe && x1 + 6 + t.node().getComputedTextLength() > +svg.attr('width')) t.attr('x', x0 - 6).attr('text-anchor', 'end');
   });
 }
 
@@ -169,17 +171,26 @@ export function lineChart(el, o) {
   if (o.xLabel) svg.append('text').attr('class', 'xlabel').attr('x', (m.l + W - m.r) / 2).attr('y', H - 4)
     .attr('text-anchor', 'middle').text(o.xLabel);
 
+  for (const [a, b] of o.huecos ?? []) {
+    const x0 = Math.max(x(a - 0.5), m.l), x1 = Math.min(x(b + 0.5), W - m.r);
+    if (x1 <= x0) continue;
+    svg.append('rect').attr('class', 'hueco').attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
+    if (x1 - x0 >= 64) svg.append('text').attr('class', 'band-label').attr('x', (x0 + x1) / 2).attr('y', m.t + 14).attr('text-anchor', 'middle').text('Sin datos');
+  }
+
   for (const r of o.refLines ?? []) {
-    svg.append('line').attr('class', r.solid ? 'refline solid' : 'refline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r.y)).attr('y2', y(r.y));
-    svg.append('text').attr('class', 'band-label').attr('x', W - m.r - 4).attr('y', y(r.y) - 4).attr('text-anchor', 'end').text(r.label);
+    svg.append('line').attr('class', 'refline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(r.y)).attr('y2', y(r.y));
   }
   for (const v of o.vlines ?? []) {
     if (v.x < x.domain()[0] || v.x > x.domain()[1]) continue;
     svg.append('line').attr('x1', x(v.x)).attr('x2', x(v.x)).attr('y1', m.t - 6).attr('y2', H - m.b)
       .attr('stroke', v.color ?? C.ink2).attr('stroke-width', v.width ?? 1.25).attr('stroke-dasharray', v.dash ? '4 3' : null);
-    if (v.label)
-      svg.append('text').attr('class', 'vlabel').attr('x', x(v.x)).attr('y', m.t - 10).attr('text-anchor', 'middle')
+    if (v.label) {
+      const t = svg.append('text').attr('class', 'vlabel').attr('x', x(v.x)).attr('y', m.t - 10).attr('text-anchor', 'middle')
         .attr('fill', v.color ?? C.ink2).text(v.label);
+      const medio = t.node().getComputedTextLength() / 2;
+      t.attr('x', Math.max(medio + 2, Math.min(W - medio - 2, x(v.x))));
+    }
   }
 
   const line = (ys) => d3.line().defined((d, i) => ys[i] != null).x((d, i) => x(o.xs[i])).y((d, i) => y(ys[i] ?? 0)).curve(o.curve ?? d3.curveLinear)(ys);
