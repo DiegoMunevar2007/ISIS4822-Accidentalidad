@@ -198,11 +198,29 @@ Después organizamos todo en tablas que se conectan por sus llaves, una con un s
 
 Por último revisamos que el resultado siguiera siendo fiel a las fuentes. Los siniestros fatales que quedaron por año son 493, 369, 462 y 538 entre 2019 y 2022, frente a 492, 369, 460 y 540 en los anuarios, una diferencia de a lo sumo dos siniestros por año que nos permitió confiar en la unión antes de construir las comparaciones. La forma en que ubicamos cada siniestro y calculamos los datos nuevos se explica a continuación.
 
-\subsection{Cómo enriquecimos los datos}
+\subsection{Enriquecimiento de los datos}
 
-Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con los libros solos no era posible saber qué pasó cerca de una cámara, que es la base de casi todas las preguntas. Para ubicar cada siniestro lo unimos por su número de formulario, que es la llave que comparten los anuarios y la información georreferenciada, de modo que no dependemos de comparar direcciones escritas de formas distintas. En 2022 las coordenadas son las que trae el mismo anuario. Para 2019 a 2021, cuyos anuarios no tienen coordenadas, las tomamos del histórico de siniestros georreferenciados de la Secretaría Distrital de Movilidad \cite{historico}, y lo comprobamos comparando por formulario una muestra de 200 siniestros de cada año, en la que casi todos los puntos coinciden con diferencias de centímetros. Esa capa llega hasta 2021, lo que explica que para 2022 se usen las coordenadas del anuario \cite{anuarios}.
+Los anuarios de 2019 a 2021 registran la ubicación de cada siniestro como una dirección escrita, por lo que con esos libros no es posible establecer qué ocurrió cerca de una cámara, condición necesaria para responder casi todas las preguntas del proyecto. La alternativa inicial era geocodificar cerca de 86.500 direcciones. Sin embargo, encontramos que la Secretaría Distrital de Movilidad publica un histórico de siniestros georreferenciados \cite{historico}, en el que cada siniestro ya está representado como un punto con su código de accidente. Tomamos esta capa como base y le incorporamos la información de los anuarios \cite{anuarios}. Hicimos el procesamiento espacial en ArcGIS Pro, dentro de una geodatabase del proyecto, en el sistema de coordenadas MAGNA-SIRGAS Origen Nacional. Al estar expresado en metros, este sistema nos permite medir distancias y radios en metros sobre el terreno.
 
-Los siniestros sin ubicación quedan por fuera del dashboard, ya que no se pueden asignar a ninguna zona. La tabla compara los anuarios con lo que quedó, porque esa diferencia hay que tenerla presente al leer las cifras, sobre todo en 2019, que es el año de referencia y el que más siniestros pierde.
+El procedimiento constó de siete pasos. En cada uno indicamos las herramientas de ArcGIS Pro que utilizamos.
+
+\begin{enumerate}
+\item \textbf{Carga de los datos.} Convertimos el GeoJSON de cámaras en una capa de puntos y el de vectores Bitcarrier en una capa de líneas mediante \textit{JSON To Features}. Importamos los anuarios de 2019 a 2022 como tablas con \textit{Excel To Table}. Transformamos las capas en coordenadas geográficas con \textit{Project} al sistema de referencia de los siniestros.
+
+\item \textbf{Filtro por año.} La capa histórica contiene siniestros de varios años. Con \textit{Export Features} y la expresión \texttt{ANO\_OCURRE >= 2019 And ANO\_OCURRE <= 2022} conservamos únicamente el periodo de estudio.
+
+\item \textbf{Unión con los anuarios.} Unimos cada anuario a la capa de puntos con \textit{Add Join}, usando el código del accidente (\texttt{CODIGO\_ACC}) como campo llave. Exportamos el resultado con \textit{Export Features} para que la unión quedara almacenada en una capa nueva. De esta forma, cada punto conserva su ubicación e incorpora las marcas del siniestro, como la participación de motocicletas, peatones o bicicletas, o la presencia de embriaguez. La unión mantiene todos los puntos, aunque su código no figure en el anuario, de modo que ningún siniestro con ubicación se pierde en este paso. En la misma capa calculamos con \textit{Calculate Field} dos campos de gravedad: \texttt{GRAVE}, para los siniestros con heridos o muertos, y \texttt{FATAL}, para aquellos con al menos un fallecido.
+
+\item \textbf{Distancia a la cámara.} Inicialmente generamos en ArcGIS Pro, con \textit{Buffer}, áreas circulares de 150, 300 y 500 metros alrededor de las cámaras. Con \textit{Intersect} contamos los siniestros dentro de cada radio para comparar los tres. Como las áreas de cámaras vecinas se superponen, un mismo siniestro podía contarse dos o tres veces. Por ello adoptamos la herramienta \textit{Near}, que asignó a cada siniestro la cámara más cercana de las 92 y la distancia hasta ella. Posteriormente, agrupamos las cámaras en 40 sitios según su código de equipo, ya que varias comparten la misma intersección con sentidos o calzadas distintas. Medimos la distancia final desde cada siniestro hasta el centro del sitio más cercano, sin límite de búsqueda. Así, todos los siniestros quedan con una distancia y cada uno se asigna a un solo sitio.
+
+\item \textbf{Preparación de los tramos.} De la red Bitcarrier conservamos únicamente los tramos de tipo 1, comprendidos entre dos intersecciones consecutivas, mediante \textit{Select By Attributes} y \textit{Export Features}. Descartamos los tramos de tipo 0 porque representan corredores completos superpuestos a los tramos, lo que nos llevaría a contar dos veces la misma vía. Bitcarrier registra cada sentido de circulación por separado, pero el registro de un siniestro no indica el sentido en que ocurrió. Por esta razón, creamos con \textit{Calculate Field} un identificador, \texttt{PAR\_ID}, compuesto por la vía y sus intersecciones ordenadas, de manera que los dos sentidos de un mismo tramo comparten el mismo código. Para la representación en el mapa y el cálculo de la longitud, integramos los dos sentidos en una sola línea con \textit{Dissolve}.
+
+\item \textbf{Asignación de cada siniestro a un tramo.} Con \textit{Near} y un radio de búsqueda de 30 metros asignamos a cada siniestro el tramo más cercano y su distancia, y con \textit{Join Field} le transferimos el \texttt{PAR\_ID} de ese tramo. Definimos el radio de 30 metros a partir del histograma de distancias entre los siniestros y la vía más cercana. Hasta unos 30 metros observamos una concentración marcada, que corresponde a los siniestros ocurridos sobre la vía. A partir de esa distancia la frecuencia se vuelve aproximadamente constante, pues corresponde a siniestros de calles vecinas. Con este radio capturamos cerca del 94\% de los siniestros ocurridos sobre la vía e incluimos solo alrededor del 6\% de siniestros de otras calles. Los siniestros sin un tramo a 30 metros o menos quedan sin asignación, ya que ocurrieron en vías sin medición de velocidad.
+
+\item \textbf{Identificación de intersecciones ambiguas.} La herramienta \textit{Near} conserva únicamente el tramo más cercano. Por ello utilizamos \textit{Generate Near Table}, también con un radio de 30 metros, para listar hasta seis tramos alrededor de cada siniestro. Solicitamos seis y no dos porque cada tramo tiene dos líneas, una por sentido, prácticamente superpuestas, y con dos solo obtendríamos los dos sentidos del mismo tramo. Con \textit{Join Field} transferimos a cada registro su \texttt{PAR\_ID}. Con dos ejecuciones de \textit{Summary Statistics} contamos el número de tramos distintos asociados a cada siniestro, y con \textit{Calculate Field} asignamos \texttt{CRUCE} igual a 1 a los que tienen dos o más. En la revisión posterior, ajustamos la regla para contar corredores distintos en lugar de tramos, ya que dos tramos consecutivos de una misma vía también quedaban marcados sin constituir una intersección.
+\end{enumerate}
+
+La siguiente tabla compara, año por año, los siniestros reportados en los anuarios con los que quedaron ubicados en el dashboard. Los registros sin ubicación quedan excluidos, lo cual hay que tener en cuenta al interpretar las cifras, en particular en 2019. Ese es el año de referencia, y en él la diferencia es cercana al 7\%.
 
 \begin{table}[!htbp]\centering\small
 \begin{tabular}{lrr}
@@ -218,7 +236,7 @@ Los siniestros sin ubicación quedan por fuera del dashboard, ya que no se puede
 \caption{Cobertura de la información georreferenciada}
 \end{table}
 
-El inventario de cámaras también tuvo que enriquecerse. Las agrupamos en sitios con la primera parte de su identificador y ubicamos cada sitio en el punto medio de sus cámaras, y sacamos la fecha de resolución del texto en el que viene junto con el número de la resolución, para saber desde cuándo había cámaras en cada lugar. En las velocidades unimos los vectores de ambos sentidos de una misma vía en un solo tramo, porque los siniestros no indican en qué sentido ocurrieron. La siguiente tabla resume la regla con la que construimos cada dato derivado y la razón de cada una.
+El inventario de cámaras también tuvo que enriquecerse. Ubicamos cada sitio en el punto medio de sus cámaras y sacamos la fecha de resolución del texto en el que viene junto con el número de la resolución, para saber desde cuándo había cámaras en cada lugar. La siguiente tabla resume la regla con la que construimos los demás datos derivados y la razón de cada una.
 
 \begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{3.4cm}P{6.2cm}L}
@@ -228,20 +246,17 @@ El inventario de cámaras también tuvo que enriquecerse. Las agrupamos en sitio
 Sitio de cámara & Cámaras con el mismo prefijo del identificador, ubicadas en su punto medio & No repetir siniestros entre cámaras vecinas.\\
 Tipo de sitio & De velocidad si alguna cámara detecta la infracción C.29 y de semáforo en los demás casos & Distinguir qué controla cada sitio.\\
 Límite del sitio & El menor de sus cámaras & Leer la velocidad frente al límite más exigente.\\
-Distancia y sitio & Sitio de cámara más cercano a cada siniestro & Cambiar el radio sin volver a procesar.\\
-Tramo del siniestro & Tramo medido más cercano, a 30 metros o menos & Relacionar siniestros y velocidad.\\
-Intersección ambigua & Dos corredores medidos a 30 metros o menos & Poder excluir casos dudosos.\\
+Distancia y sitio & Centro del sitio de cámara más cercano a cada siniestro & Cambiar el radio sin volver a procesar.\\
 Zona & Con cámara a 500 metros o menos y referencia si está sobre un tramo medido más lejos & Tener contra qué comparar.\\
 Tramo con cámara & Sitio de cámara a 150 metros o menos & Separar las velocidades con y sin cámara.\\
 Periodo & Antes en 2019, transición en 2020 y después en 2021 y 2022 & Comparar los mismos bloques en todas las vistas.\\
-Grave y fatal & Marcas a partir de la gravedad del siniestro & Filtrar y contar por severidad.\\
 Velocidad mensual & Percentil 85 por sentido en cada mes y promedio de los dos sentidos & Una medida por tramo en la misma unidad de los siniestros.\\
 \bottomrule
 \end{tabularx}
 \caption{Reglas de los datos derivados. La infracción C.29 corresponde al exceso de velocidad}
 \end{table}
 
-Guardamos la distancia de cada siniestro y no solo una marca de cerca o lejos, porque así el radio se puede cambiar desde el dashboard sin volver a procesar los datos, y las razones de cada umbral están en la sección de supuestos.
+A partir de la distancia y del sitio más cercano derivamos, además, el corredor, la zona (con cámara o vías sin cámara) y el periodo de cada siniestro. Almacenamos la distancia, y no únicamente una marca de cercanía, para que el radio pueda modificarse desde el dashboard sin reprocesar los datos. Las razones de cada umbral están en la sección de supuestos.
 
 \section{Why: para qué}
 
@@ -341,7 +356,7 @@ Contamos como zona con cámara los siniestros a 500 metros o menos de un sitio. 
 Las 92 cámaras las agrupamos en 40 sitios porque varias comparten esquina con sentidos o calzadas distintas, y contarlas por separado repetiría los mismos siniestros en dos o tres cámaras vecinas. También hace más legible el mapa, donde el tamaño del círculo dice cuántas cámaras hay en un sitio sin tener que dibujar puntos superpuestos, y es la unidad que reconoce una persona cuando habla de la cámara de una esquina.
 
 
-La referencia son las vías con velocidad medida que quedan más allá del radio, y no toda la ciudad, porque las cámaras están en corredores principales y compararlas con calles de barrio mezclaría vías muy distintas. Cada siniestro se asigna a un tramo cuando está a 30 metros o menos, que es un margen para el error de ubicación sin pasar a la cuadra vecina, y cuando queda cerca de dos corredores lo marcamos como intersección ambigua para poder excluirlo. Para ver todo un corredor usamos 60 metros alrededor de su trazado, porque allí interesa recoger las dos calzadas.
+La referencia son las vías con velocidad medida que quedan más allá del radio, y no toda la ciudad, porque las cámaras están en corredores principales y compararlas con calles de barrio mezclaría vías muy distintas. Cada siniestro se asigna a un tramo cuando está a 30 metros o menos, un radio que sale del histograma de distancias a la vía más cercana, porque con él se recoge cerca del 94\% de los siniestros ocurridos sobre la vía y entra solo alrededor del 6\% de otras calles, y cuando queda cerca de dos corredores lo marcamos como intersección ambigua para poder excluirlo. Para ver todo un corredor usamos 60 metros alrededor de su trazado, porque allí interesa recoger las dos calzadas.
 
 \subsection{Velocidad}
 
