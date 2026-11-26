@@ -184,11 +184,29 @@ Libro de 2018 & Sus coordenadas vienen en cero y no hay velocidades de ese año.
 \caption{Variables descartadas}
 \end{table}
 
-\subsection{Cómo enriquecimos los datos}
+\subsection{Enriquecimiento de los datos}
 
-Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con los libros solos no era posible saber qué pasó cerca de una cámara, que es la base de casi todas las preguntas. Por eso usamos la base de siniestros georreferenciados de la Secretaría Distrital de Movilidad, que cubre casi todos los siniestros de los anuarios. La tabla compara ambas fuentes año por año, porque la parte que no tiene ubicación queda por fuera del dashboard y hay que tenerla presente al leer las cifras, sobre todo en 2019, que es el año de referencia.
+Los anuarios de 2019 a 2021 registran la ubicación de cada siniestro como una dirección escrita, por lo que con esos libros no es posible establecer qué ocurrió cerca de una cámara, condición necesaria para responder casi todas las preguntas del proyecto. La alternativa inicial era geocodificar cerca de 86.500 direcciones. Sin embargo, se identificó que la Secretaría Distrital de Movilidad publica un histórico de siniestros georreferenciados, en el que cada siniestro ya está representado como un punto con su código de accidente. Se tomó esta capa como base y se le incorporó la información de los anuarios. El procesamiento espacial se realizó en ArcGIS Pro, dentro de una geodatabase del proyecto, en el sistema de coordenadas MAGNA-SIRGAS Origen Nacional. Al estar expresado en metros, este sistema permite medir distancias y radios en metros sobre el terreno.
 
-\pendiente{Confirmar el procedimiento exacto de georreferenciación.}
+El procedimiento constó de siete pasos. En cada uno se indican las herramientas de ArcGIS Pro utilizadas.
+
+\begin{enumerate}
+\item \textbf{Carga de los datos.} El GeoJSON de cámaras se convirtió en una capa de puntos y el de vectores Bitcarrier en una capa de líneas mediante \textit{JSON To Features}. Los anuarios de 2019 a 2022 se importaron como tablas con \textit{Excel To Table}. Las capas en coordenadas geográficas se transformaron con \textit{Project} al sistema de referencia de los siniestros.
+
+\item \textbf{Filtro por año.} La capa histórica contiene siniestros de varios años. Con \textit{Export Features} y la expresión \texttt{ANO\_OCURRE >= 2019 And ANO\_OCURRE <= 2022} se conservó únicamente el periodo de estudio.
+
+\item \textbf{Unión con los anuarios.} Cada anuario se unió a la capa de puntos con \textit{Add Join}, usando el código del accidente (\texttt{CODIGO\_ACC}) como campo llave. El resultado se exportó con \textit{Export Features} para que la unión quedara almacenada en una capa nueva. De esta forma, cada punto conserva su ubicación e incorpora las marcas del siniestro, como la participación de motocicletas, peatones o bicicletas, o la presencia de embriaguez. La unión mantiene todos los puntos, aunque su código no figure en el anuario, de modo que ningún siniestro con ubicación se pierde en este paso. En la misma capa se calcularon con \textit{Calculate Field} dos campos de gravedad: \texttt{GRAVE}, para los siniestros con heridos o muertos, y \texttt{FATAL}, para aquellos con al menos un fallecido.
+
+\item \textbf{Distancia a la cámara.} Inicialmente se generaron en ArcGIS Pro, con \textit{Buffer}, áreas circulares de 150, 300 y 500 metros alrededor de las cámaras. Con \textit{Intersect} se contaron los siniestros dentro de cada radio para comparar los tres. Como las áreas de cámaras vecinas se superponen, un mismo siniestro podía contabilizarse dos o tres veces. Por ello se adoptó la herramienta \textit{Near}, que asignó a cada siniestro la cámara más cercana de las 92 y la distancia hasta ella. Posteriormente, las cámaras se agruparon en 40 sitios según su código de equipo, ya que varias comparten la misma intersección con sentidos o calzadas distintas. La distancia final se midió desde cada siniestro hasta el centro del sitio más cercano, sin límite de búsqueda. Así, todos los siniestros quedan con una distancia y cada uno se asigna a un solo sitio.
+
+\item \textbf{Preparación de los tramos.} De la red Bitcarrier se conservaron únicamente los tramos de tipo 1, comprendidos entre dos intersecciones consecutivas, mediante \textit{Select By Attributes} y \textit{Export Features}. Los tramos de tipo 0 se descartaron porque representan corredores completos superpuestos a los tramos, lo que llevaría a contabilizar dos veces la misma vía. Bitcarrier registra cada sentido de circulación por separado, pero el registro de un siniestro no indica el sentido en que ocurrió. Por esta razón, se creó con \textit{Calculate Field} un identificador, \texttt{PAR\_ID}, compuesto por la vía y sus intersecciones ordenadas, de manera que los dos sentidos de un mismo tramo comparten el mismo código. Para la representación en el mapa y el cálculo de la longitud, los dos sentidos se integraron en una sola línea con \textit{Dissolve}.
+
+\item \textbf{Asignación de cada siniestro a un tramo.} Con \textit{Near} y un radio de búsqueda de 30 metros se asignó a cada siniestro el tramo más cercano y su distancia, y con \textit{Join Field} se le transfirió el \texttt{PAR\_ID} de ese tramo. El radio de 30 metros se definió a partir del histograma de distancias entre los siniestros y la vía más cercana. Hasta unos 30 metros se observa una concentración marcada, que corresponde a los siniestros ocurridos sobre la vía. A partir de esa distancia la frecuencia se vuelve aproximadamente constante, pues corresponde a siniestros de calles vecinas. Con este radio se captura cerca del 94\% de los siniestros ocurridos sobre la vía y se incluye solo alrededor del 6\% de siniestros de otras calles. Los siniestros sin un tramo a 30 metros o menos quedan sin asignación, ya que ocurrieron en vías sin medición de velocidad.
+
+\item \textbf{Identificación de intersecciones ambiguas.} La herramienta \textit{Near} conserva únicamente el tramo más cercano. Por ello se utilizó \textit{Generate Near Table}, también con un radio de 30 metros, para listar hasta seis tramos alrededor de cada siniestro. Se solicitaron seis y no dos porque cada tramo tiene dos líneas, una por sentido, prácticamente superpuestas, y con dos solo se obtendrían los dos sentidos del mismo tramo. Con \textit{Join Field} se transfirió a cada registro su \texttt{PAR\_ID}. Con dos ejecuciones de \textit{Summary Statistics} se contó el número de tramos distintos asociados a cada siniestro, y con \textit{Calculate Field} se asignó \texttt{CRUCE} igual a 1 a los que tienen dos o más. En la revisión posterior, la regla se ajustó para contar corredores distintos en lugar de tramos, ya que dos tramos consecutivos de una misma vía también quedaban marcados sin constituir una intersección.
+\end{enumerate}
+
+La siguiente tabla compara, año por año, los siniestros reportados en los anuarios con los que quedaron ubicados en el dashboard. Los registros sin ubicación quedan excluidos, lo cual debe tenerse en cuenta al interpretar las cifras, en particular en 2019. Ese es el año de referencia, y en él la diferencia es cercana al 7\%.
 
 \begin{table}[H]\centering\small
 \begin{tabular}{lrr}
@@ -204,7 +222,7 @@ Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con l
 \caption{Cobertura de la información georreferenciada}
 \end{table}
 
-Con la ubicación derivamos la distancia de cada siniestro a la cámara más cercana, el sitio y el corredor, el tramo de velocidad sobre el que ocurrió, la zona (con cámara o vías sin cámara) y el periodo. Guardamos la distancia y no solo una marca de cerca o lejos, porque así el radio se puede cambiar desde el dashboard sin volver a procesar los datos. Las reglas de cada derivada y su razón están en la sección de supuestos.
+A partir de la distancia y del sitio más cercano se derivaron, además, el corredor, la zona (con cámara o vías sin cámara) y el periodo de cada siniestro. Se almacenó la distancia, y no únicamente una marca de cercanía, para que el radio pueda modificarse desde el dashboard sin reprocesar los datos. Las reglas de cada variable derivada y su justificación se presentan en la sección de supuestos.
 
 \section{Why: para qué}
 
