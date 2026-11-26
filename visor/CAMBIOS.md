@@ -322,3 +322,18 @@ Cambios hechos después de la sección 16, casi todos por pedido directo.
 | Velocidad y gravedad por corredor | `<details>` nativo | `Collapsible` | Mismo componente que el resto |
 
 **Pendiente:** el recorrido guiado y la historia no se volvieron a recorrer entera tras estos textos; la tabla de Comparar meses a 640 px requiere desplazamiento horizontal.
+
+---
+
+## 18. Cambios rehechos a partir de la versión publicada
+
+Estos ajustes se habían quedado sin commit en otro equipo y se rehicieron tomando como referencia https://visor-ashen.vercel.app.
+
+| Área | Cambio |
+|---|---|
+| Historia | Copa de martini: nueve pasos guiados y un décimo de exploración libre; las cifras salen de los datos y al terminar el visor queda como está |
+| Bienvenida | Ventana "Preguntas que responde el visor (Why)" con las seis preguntas textuales |
+| Velocidad del tráfico | Gráfica "Diferencia entre con y sin cámara" con su ayuda y tooltip |
+| Corredores | Rótulos "Menos / Más casos que sin cámara"; franja y guía de instalación en el detalle; línea roja en la guía |
+| Identidad | Favicon de cámara y algunos iconos |
+| Textos | Frases completas y sin dos puntos |

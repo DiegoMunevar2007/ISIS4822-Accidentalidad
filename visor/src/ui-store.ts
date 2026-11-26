@@ -13,6 +13,10 @@ function yaVisto(): boolean {
 
 interface Ui {
   landing: boolean
+  /** Ventana con las preguntas del proyecto. */
+  preguntas: boolean
+  openPreguntas: () => void
+  closePreguntas: () => void
   tour: boolean
   tourStep: number
   story: boolean
@@ -27,6 +31,9 @@ interface Ui {
 
 export const useUi = create<Ui>((set) => ({
   landing: !yaVisto(),
+  preguntas: false,
+  openPreguntas: () => set({ preguntas: true }),
+  closePreguntas: () => set({ preguntas: false }),
   tour: false,
   tourStep: 0,
   story: false,

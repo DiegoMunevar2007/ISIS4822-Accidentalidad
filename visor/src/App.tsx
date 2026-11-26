@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Filters } from '@/components/Filters'
 import { ScopeLine, Tabs, TopBar } from '@/components/Shell'
 import { Landing } from '@/components/Landing'
+import { Preguntas } from '@/components/Preguntas'
 import { Tour } from '@/components/Tour'
 import { Story } from '@/components/story/Story'
 import { MapPanel } from '@/components/panels/MapPanel'
@@ -61,6 +62,7 @@ export function App() {
       </div>
       <div id="tooltip" className="tooltip" hidden />
       <Landing />
+      <Preguntas />
       <Story />
       <Tour />
     </>

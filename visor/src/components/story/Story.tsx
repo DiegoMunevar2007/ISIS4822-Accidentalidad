@@ -27,7 +27,7 @@ export function Story() {
       const k = useUi.getState().storyStep
       if (e.key === 'ArrowRight') { e.preventDefault(); if (k < STEPS.length - 1) applyStep(k + 1) }
       if (e.key === 'ArrowLeft') { e.preventDefault(); if (k > 0) applyStep(k - 1) }
-      if (e.key === 'Escape') stopStory()
+      if (e.key === 'Escape') stopStory(k === STEPS.length - 1)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -58,7 +58,7 @@ export function Story() {
               <span className="text-small font-semibold text-primary">{act.label}</span>
               <span className="text-small text-muted-foreground">Paso {i + 1} de {STEPS.length}</span>
             </div>
-            <Button size="icon-small" variant="ghost" id="story-close" title="Cerrar la historia" aria-label="Cerrar la historia" onClick={stopStory}>
+            <Button size="icon-small" variant="ghost" id="story-close" title="Cerrar la historia" aria-label="Cerrar la historia" onClick={() => stopStory(last)}>
               <X className="size-4" />
             </Button>
           </div>
@@ -71,7 +71,7 @@ export function Story() {
                       key={k}
                       type="button"
                       className={`h-1.5 flex-1 cursor-pointer rounded-[2px] ${k === i ? 'bg-primary' : k < i ? 'bg-primary/45' : 'bg-border'}`}
-                      aria-label={`Paso ${k + 1}: ${STEPS[k].title}`}
+                      aria-label={`Paso ${k + 1}, ${STEPS[k].title}`}
                       aria-current={k === i ? 'step' : undefined}
                       title={STEPS[k].title}
                       onClick={() => applyStep(k)}
@@ -96,6 +96,11 @@ export function Story() {
             )}
           </div>
         </CardContent>
+        {s.acciones && (
+          <div className="flex flex-wrap gap-2" id="story-acciones">
+            {s.acciones.map((a) => <Button key={a.label} size="small" onClick={a.run}>{a.label}</Button>)}
+          </div>
+        )}
         {s.hint && (
           <Alert id="story-hint" className="border-accent bg-accent text-accent-foreground">
             <MousePointerClick />
@@ -115,7 +120,7 @@ export function Story() {
           <Button size="small" variant="default" id="story-back" disabled={i === 0} onClick={() => applyStep(i - 1)}>
             <ChevronLeft className="size-4" /> Atrás
           </Button>
-          <Button size="small" variant="primary" id="story-next" onClick={() => (last ? stopStory() : applyStep(i + 1))}>
+          <Button size="small" variant="primary" id="story-next" onClick={() => (last ? stopStory(true) : applyStep(i + 1))}>
             {last ? 'Explorar el visor' : 'Siguiente'} {!last && <ChevronRight className="size-4" />}
           </Button>
         </CardFooter>

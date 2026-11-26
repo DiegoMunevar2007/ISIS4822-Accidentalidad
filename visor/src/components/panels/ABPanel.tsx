@@ -82,7 +82,7 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
           </Button>
         </div>
       </header>
-      <p className="sub desc mb-2">Dos grupos de meses frente a frente.</p>
+      <p className="sub desc mb-2">Dos grupos de meses comparados entre sí.</p>
       <div className="mb-2 flex flex-wrap items-center gap-3" id="ab-meses-sueltos">
         <Seg small id="seg-click" prefix="Elegir para" value={st.abClick} onChange={(abClick) => set({ abClick })} options={[['A', 'Grupo A'], ['B', 'Grupo B']]} />
         <Button size="small" variant="ghost" onClick={() => set(st.abClick === 'A' ? { mesesA: [] } : { mesesB: [] })} disabled={(st.abClick === 'A' ? mesesA : mesesB).length === 0}>
@@ -105,9 +105,9 @@ export function ABPanel({ K, visible }: { K: Computed; visible: boolean }) {
           resumen: (letra: 'A' | 'B', ancho: number) => {
             const p = prom(K.mZona, letra === 'A' ? mesesA : mesesB)
             const n = nLabel(st)
-            if (ancho > 130 + n.length * 7) return `${letra}: promedio de ${dec(p)} ${n} al mes`
-            if (ancho > 90 + n.length * 7) return `${letra}: ${dec(p)} ${n} al mes`
-            return ancho > 70 ? `${letra}: ${dec(p)} al mes` : `${letra} ${dec(p)}`
+            if (ancho > 130 + n.length * 7) return `${letra} con un promedio de ${dec(p)} ${n} al mes`
+            if (ancho > 90 + n.length * 7) return `${letra} con ${dec(p)} ${n} al mes`
+            return ancho > 70 ? `${letra} con ${dec(p)} al mes` : `${letra} ${dec(p)}`
           },
           onRange: (letra: 'A' | 'B', d: number, h: number) => set(letra === 'A' ? { mesesA: rango(d, h) } : { mesesB: rango(d, h) }),
           onPick: (idx: number[], info: { shift: boolean; arrastre: boolean }) => {

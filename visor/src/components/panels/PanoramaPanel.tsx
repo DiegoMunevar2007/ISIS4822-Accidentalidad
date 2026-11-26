@@ -4,10 +4,11 @@ import { C, fmt, hideTip, lineChart, showTip, speedSeverityScatter } from '@/cha
 import { useStore } from '@/store'
 import { gravLabel, nLabel } from '@/lib/derived'
 import { Chart } from '@/components/charts/Chart'
+import { ChartLegend } from '@/components/charts/bits'
 import { Ayuda } from '@/components/charts/Ayuda'
 import { Button } from '@/components/ui/button'
 import { Seg } from '@/components/ui/seg'
-import { ChevronDown, TriangleAlert } from 'lucide-react'
+import { ChevronDown, MapPin, TriangleAlert } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Card } from '@/components/ui/card'
@@ -59,10 +60,10 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
           <h2 className="pan-title">
             Cambio por corredor
             <Ayuda>
-              Cada barra es el cambio del promedio mensual de {nLabel(st)} a menos de {st.radio} m de las cámaras del corredor, de 2019 a 2021–22, menos el mismo cambio en las vías sin cámara de toda la ciudad ({fmt.pct(ctrl)}). A la izquierda, el corredor tuvo una mayor reducción que esas vías (bajó más o subió menos); a la derecha, una menor reducción (bajó menos o subió más). La miniatura muestra la evolución mensual de 2019 a 2022.
+              Cada barra es el cambio del promedio mensual de {nLabel(st)} a menos de {st.radio} m de las cámaras del corredor, de 2019 a 2021–22, menos el mismo cambio en las vías sin cámara de toda la ciudad ({fmt.pct(ctrl)}). A la izquierda, los siniestros del corredor bajaron más que en esas vías (o subieron menos); a la derecha, bajaron menos (o subieron más). La miniatura muestra la evolución mensual de 2019 a 2022.
             </Ayuda>
           </h2>
-          <p className="sub desc">Cada corredor frente a las vías sin cámara, de 2019 a 2021–22. Zona con cámara en conjunto: {pp(difGlobal)}</p>
+          <p className="sub desc">Cada corredor frente a las vías sin cámara, de 2019 a 2021–22. La zona con cámara en conjunto tiene una diferencia de {pp(difGlobal)}</p>
         </div>
       </div>
 
@@ -80,11 +81,11 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
           </div>
           <p className="mb-2 flex items-center gap-2 text-small text-muted-foreground">
             <i className="inline-block h-3 w-4 rounded-[2px] bg-[#F2D98A]" aria-hidden="true" />
-            Franja amarilla: instalación de las cámaras.
+            La franja amarilla de cada miniatura indica cuándo se instalaron las cámaras.
           </p>
           <div className="pan-axis" aria-hidden="true">
-            <span>Mayor reducción que en vías sin cámara</span>
-            <span>Menor reducción que en vías sin cámara</span>
+            <span>Menos casos que sin cámara</span>
+            <span>Más casos que sin cámara</span>
           </div>
           <ScrollArea className="max-h-[540px]">
           <ul className="pan-list" role="list">
@@ -119,7 +120,7 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
             })}
           </ul>
           </ScrollArea>
-          {sinDato > 0 && <p className="note">{sinDato} corredor{sinDato > 1 ? 'es' : ''} sin siniestros en 2019: no tiene cambio calculable.</p>}
+          {sinDato > 0 && <p className="note">{sinDato} corredor{sinDato > 1 ? 'es' : ''} sin siniestros en 2019, por lo que no tiene cambio calculable.</p>}
           {lista.length === 0 && <p className="note">Ningún corredor cumple el filtro.</p>}
         </div>
 
@@ -133,8 +134,8 @@ export function PanoramaPanel({ visible }: { visible: boolean }) {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <p className="note">
-            Un punto por corredor.
-            <Ayuda>Eje horizontal: velocidad P85 de los tramos con cámara del corredor. Eje vertical: proporción de siniestros con muertos a menos de {st.radio} m de las cámaras. No mide exposición: un corredor con más tráfico puede tener más siniestros.</Ayuda>
+            Cada punto de la gráfica es un corredor.
+            <Ayuda>El eje horizontal es la velocidad P85 de los tramos con cámara del corredor y el vertical, la proporción de siniestros con muertos a menos de {st.radio} m de las cámaras. No mide exposición: un corredor con más tráfico puede tener más siniestros.</Ayuda>
           </p>
           <Chart id="pan-vel" draw={(el) => speedSeverityScatter(el, velGrav, { selected: sel?.corredor, onSelect: elegir })} />
         </CollapsibleContent>
@@ -174,6 +175,7 @@ function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
           <p className="muted">{sel.sitios} sitio{sel.sitios > 1 ? 's' : ''} de cámara, {fmt.int(sel.n)} siniestros en cuatro años</p>
         </div>
         <Button size="small" id="pan-ver" onClick={() => set({ tab: 'mapa', mapa: true, corredor: sel.corredor, sitio: null })}>
+          <MapPin className="size-4" />
           Ver en el mapa
         </Button>
       </div>
@@ -188,7 +190,7 @@ function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
           {bajo && (
             <Alert className="border-border py-2">
               <TriangleAlert />
-              <AlertDescription className="text-small">Pocos siniestros: un mes de más o de menos mueve mucho el promedio.</AlertDescription>
+              <AlertDescription className="text-small">Hay pocos siniestros, así que un mes de más o de menos mueve mucho el promedio.</AlertDescription>
             </Alert>
           )}
         </div>
@@ -197,12 +199,13 @@ function Detalle({ sel, ctrl }: { sel: any; ctrl: number | null }) {
             Siniestros por mes en el corredor
             <Ayuda>Evolución mensual del corredor de 2019 a 2022. La franja amarilla marca la instalación de las cámaras.</Ayuda>
           </p>
+          <ChartLegend items={[{ label: 'Siniestros del corredor', color: C.cam }, { label: 'Instalación de las cámaras', color: '#FFD84D', area: true }]} />
           <Chart
             draw={(el) =>
               lineChart(el, {
                 xs, series: [{ key: 'c', label: sel.corredor, color: C.cam, ys: [...sel.meses] }], xDomain: [0, 47],
                 xTicks: xs.filter((m) => m % 12 === 0), xTickFormat: (m: number) => String(2019 + m / 12),
-                bands: [{ x0: 10.6, x1: 14.9, label: 'Instalación de las cámaras', cls: 'instalacion' }], carriles: true, height: 176, top: 14, left: 34, points: false,
+                bands: [{ x0: 10.6, x1: 14.9, cls: 'instalacion' }], sombra: true, height: 160, top: 14, left: 34, points: false,
                 tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>${sel.meses[i]} siniestros`,
               })
             }

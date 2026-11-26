@@ -54,15 +54,15 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
           rows={[
             {
               icon: Cctv, label: zona, cambio: zonaAD.cambio, color: C.despues, bajo: zonaAD.antes + zonaAD.despues < 30, detail: `de ${fmt.dec(zonaAD.ma)} a ${fmt.dec(zonaAD.md)} ${nLabel(st)} por mes`,
-              tip: `<b>${zona}</b><br>2019: ${fmt.int(zonaAD.antes)} ${nLabel(st)} (${fmt.dec(zonaAD.ma)} por mes)<br>${dLab}: ${fmt.int(zonaAD.despues)} ${nLabel(st)} (${fmt.dec(zonaAD.md)} por mes)`,
+              tip: `<b>${zona}</b><br>En 2019, ${fmt.int(zonaAD.antes)} ${nLabel(st)} (${fmt.dec(zonaAD.ma)} por mes)<br>En ${dLab}, ${fmt.int(zonaAD.despues)} ${nLabel(st)} (${fmt.dec(zonaAD.md)} por mes)`,
             },
             {
               icon: VideoOff, label: `Vías sin cámara (a más de ${st.radio} m)`, cambio: ctrlAD.cambio, color: C.ctrl, detail: `de ${fmt.dec(ctrlAD.ma)} a ${fmt.dec(ctrlAD.md)} ${nLabel(st)} por mes`,
-              tip: `<b>Vías sin cámara</b> (tramos de toda la ciudad sin cámara cerca)<br>2019: ${fmt.int(ctrlAD.antes)} ${nLabel(st)} (${fmt.dec(ctrlAD.ma)} por mes)<br>${dLab}: ${fmt.int(ctrlAD.despues)} ${nLabel(st)} (${fmt.dec(ctrlAD.md)} por mes)`,
+              tip: `<b>Vías sin cámara</b> (tramos de toda la ciudad sin cámara cerca)<br>En 2019, ${fmt.int(ctrlAD.antes)} ${nLabel(st)} (${fmt.dec(ctrlAD.ma)} por mes)<br>En ${dLab}, ${fmt.int(ctrlAD.despues)} ${nLabel(st)} (${fmt.dec(ctrlAD.md)} por mes)`,
             },
           ]}
         />
-        <p className="diff-line">Diferencia entre ambas: <b>{pp}</b></p>
+        <p className="diff-line">La diferencia entre ambas es de <b>{pp}</b></p>
         </>)}
         {aviso && (
           <Alert className="mt-2 border-border">
@@ -98,12 +98,12 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
       </div>
       <div id="f-vict">
         {sinCambio ? (
-          <p className="muted">Este periodo es anterior a la instalación: no hay víctimas "después" con qué comparar.</p>
+          <p className="muted">Este periodo es anterior a la instalación, así que no hay víctimas posteriores con qué comparar.</p>
         ) : victRows.length ? (
           <PairedBars
             rows={victRows.map((v: any) => ({
               label: v.condicion, a: v.ma, b: v.md, delta: v.ma > 0 ? (v.md - v.ma) / v.ma : null,
-              tip: `<b>${v.condicion}</b><br>2019: ${fmt.int(v.antes)} víctimas (${fmt.dec(v.ma)} por mes)<br>${dLab}: ${fmt.int(v.despues)} víctimas (${fmt.dec(v.md)} por mes)`,
+              tip: `<b>${v.condicion}</b><br>En 2019, ${fmt.int(v.antes)} víctimas (${fmt.dec(v.ma)} por mes)<br>En ${dLab}, ${fmt.int(v.despues)} víctimas (${fmt.dec(v.md)} por mes)`,
             }))}
           />
         ) : (

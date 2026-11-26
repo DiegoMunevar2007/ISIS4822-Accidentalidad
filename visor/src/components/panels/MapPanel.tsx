@@ -5,7 +5,7 @@ import { createMap } from '@/map.js'
 import { useStore } from '@/store'
 import { useUi } from '@/ui-store'
 import { gravLabel, monthStartDay, nombreAmbito, type Computed } from '@/lib/derived'
-import { X } from 'lucide-react'
+import { PanelLeftClose, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -85,6 +85,7 @@ export function MapPanel({ K, visible }: { K: Computed; visible: boolean }) {
           <p className="sub" id="map-sub">{fmt.int(n)} {st.gravedad === 'todos' ? 'siniestros' : gravLabel(st)}, {P.label.toLowerCase()}</p>
         </div>
         <Button size="small" id="btn-hide-map" title="Ocultar el mapa para ver más gráficas" onClick={() => set({ mapa: false })}>
+          <PanelLeftClose className="size-4" />
           Ocultar mapa
         </Button>
       </header>

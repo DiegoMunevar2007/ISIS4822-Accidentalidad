@@ -6,6 +6,8 @@ export interface LegendItem {
   label: string
   color: string
   dash?: boolean
+  /** Franja sombreada: la guía es un cuadro en lugar de una línea. */
+  area?: boolean
 }
 
 export function ChartLegend({ items, children }: { items: LegendItem[]; children?: ReactNode }) {
@@ -13,9 +15,13 @@ export function ChartLegend({ items, children }: { items: LegendItem[]; children
     <div className="chart-legend">
       {items.map((s) => (
         <span key={s.label}>
-          <svg width="18" height="8" aria-hidden="true">
-            <line x1="0" y1="4" x2="18" y2="4" stroke={s.color} strokeWidth="2.5" strokeDasharray={s.dash ? '4 3' : undefined} />
-          </svg>
+          {s.area ? (
+            <svg width="18" height="12" aria-hidden="true"><rect width="18" height="12" rx="2" fill={s.color} /></svg>
+          ) : (
+            <svg width="18" height="8" aria-hidden="true">
+              <line x1="0" y1="4" x2="18" y2="4" stroke={s.color} strokeWidth="2.5" strokeDasharray={s.dash ? '4 3' : undefined} />
+            </svg>
+          )}
           {s.label}
         </span>
       ))}

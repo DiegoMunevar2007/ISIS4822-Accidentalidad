@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Compass, MessageCircleQuestion, Telescope } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useUi } from '@/ui-store'
@@ -34,6 +35,7 @@ function SerieResumen({ meses }: { meses: ArrayLike<number> }) {
 export function Landing() {
   const open = useUi((s) => s.landing)
   const close = useUi((s) => s.closeLanding)
+  const openPreguntas = useUi((s) => s.openPreguntas)
   const D = useStore((s) => s.D)
   const meses = useMemo(
     () => (D ? porMes(D, baseMask(D, defaults(new Set(D.meta.clases))), () => true) : null),
@@ -72,17 +74,18 @@ export function Landing() {
               >
                 <span className="flex flex-col">
                   <span className="text-[1.0625rem] font-bold">Ver la historia</span>
-                  <span className="text-small text-primary-foreground/85">Nueve pasos guiados, unos 2 minutos</span>
+                  <span className="text-small text-primary-foreground/85">Nueve pasos guiados y luego exploración libre</span>
                 </span>
               </button>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => { close(); startTour() }}>Cómo usar el visor</Button>
-                <Button onClick={close}>Explorar libremente</Button>
+                <Button onClick={() => { close(); startTour() }}><Compass className="size-4" />Cómo usar el visor</Button>
+                <Button onClick={close}><Telescope className="size-4" />Explorar libremente</Button>
+                <Button onClick={() => { close(); openPreguntas() }}><MessageCircleQuestion className="size-4" />Preguntas que responde el visor (Why)</Button>
               </div>
             </div>
 
             <p className="fineprint mt-auto pt-8">
-              Fuentes: SDM (siniestros georreferenciados y anuarios SIGAT), inventario Cámaras Salvavidas y Bitcarrier (velocidades). Los cambios son descriptivos y no prueban un efecto causal.
+              Los datos provienen de SDM (siniestros georreferenciados y anuarios SIGAT), del inventario Cámaras Salvavidas y de Bitcarrier (velocidades). Los cambios son descriptivos y no prueban un efecto causal.
             </p>
           </div>
 

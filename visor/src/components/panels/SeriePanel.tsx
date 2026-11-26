@@ -116,7 +116,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         monthly: [...K.mScope], monthStartDay, range: st.rango, onBrush: (rg: [number, number] | null) => set({ rango: rg }),
       }),
       // La franja es una interacción sin pista visual: una línea corta, pegada a ella.
-      note: <>{st.rango ? 'Clic fuera de la selección para ver todo el periodo.' : 'Arrastrar para acercar.'}</>,
+      note: <>{st.rango ? 'Clic fuera de la selección para ver todo el periodo.' : 'Arrastrar sobre esta franja sirve para acercar un periodo.'}</>,
     }
   }
 
@@ -153,7 +153,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
                     { key: 'y', label: String(y), color: COL_ANIO[y], width: 2.5, ys },
                   ],
                   tooltip: (i: number) =>
-                    `<b>${MESES_CORTOS[i]}</b><br>${legendDot(COL_ANIO[y])} ${y}: <b>${fmt.int(ys[i])}</b>${ghost ? `<br>${legendDot(C.antes)} 2019: <b>${fmt.int(ghost[i])}</b>` : ''}`,
+                    `<b>${MESES_CORTOS[i]}</b><br>${legendDot(COL_ANIO[y])} ${y} <b>${fmt.int(ys[i])}</b>${ghost ? `<br>${legendDot(C.antes)} 2019 <b>${fmt.int(ghost[i])}</b>` : ''}`,
                 })}
               />
             </div>
@@ -164,8 +164,8 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
     return {
       title: 'Un año frente a otro',
       sub: 'Un recuadro por año, de enero a diciembre y con la misma escala',
-      desc: 'Cada año frente a 2019.',
-      help: 'Un recuadro por año, de enero a diciembre y con la misma escala vertical. Los colores son los de todo el visor: gris 2019, gris claro 2020 y rojo 2021 y 2022. En cada recuadro, la línea gris fina es 2019, de referencia.',
+      desc: 'Cada año se compara con 2019, mes a mes.',
+      help: 'Un recuadro por año, de enero a diciembre y con la misma escala vertical. Los colores son los de todo el visor, con gris para 2019, gris claro para 2020 y rojo para 2021 y 2022. En cada recuadro, la línea gris fina es 2019, de referencia.',
       legend: <ChartLegend items={items} />,
       custom,
       note: null,
@@ -215,15 +215,15 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
         height: 260,
         tooltip: (i: number) =>
-          `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Con cámara: <b>${fmt.int(zi[i])}%</b> del nivel de 2019 (${fmt.int(K.mZona[i])} siniestros)${
-            st.ctrlOn ? `<br>${legendDot(C.ctrl)} Sin cámara: <b>${fmt.int(ci[i])}%</b> del nivel de 2019 (${fmt.int(K.mCtrl[i])} siniestros)` : ''}`,
+          `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} Con cámara <b>${fmt.int(zi[i])}%</b> del nivel de 2019 (${fmt.int(K.mZona[i])} siniestros)${
+            st.ctrlOn ? `<br>${legendDot(C.ctrl)} Sin cámara <b>${fmt.int(ci[i])}%</b> del nivel de 2019 (${fmt.int(K.mCtrl[i])} siniestros)` : ''}`,
       }),
       context: st.ctrlOn ? (el) => diffChart(el, {
         xs, ds: di, xDomain: [P.m0, P.m1], height: 200,
         xTicks: xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0), xTickFormat: monthTick,
         yLabel: 'Diferencia (%)',
         labels: ['Más alto con cámara', 'Más alto sin cámara'],
-        tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>Con cámara ${fmt.int(zi[i])}%, sin cámara ${fmt.int(ci[i])}%<br>Diferencia: <b>${di[i] > 0 ? '+' : ''}${fmt.int(di[i])}</b> %`,
+        tooltip: (i: number) => `<b>${mesLabel(i)}</b><br>Con cámara ${fmt.int(zi[i])}%, sin cámara ${fmt.int(ci[i])}%<br>Diferencia de <b>${di[i] > 0 ? '+' : ''}${fmt.int(di[i])}</b> %`,
       }) : undefined,
       note: null,
     }
@@ -261,7 +261,7 @@ function Velocidad({ K: _K }: { K: Computed }) {
   const heading = () => (
     <h3 className="sec">
       Velocidad del tráfico
-      <Ayuda>P85 (percentil 85): el 85 % de los vehículos va a esa velocidad o más despacio. Se calcula cada mes con los tramos medidos por Bitcarrier. La línea horizontal es el límite de velocidad. La línea vertical marca el inicio de las multas.</Ayuda>
+      <Ayuda>El P85, o percentil 85, indica que el 85 % de los vehículos va a esa velocidad o más despacio. Se calcula cada mes con los tramos medidos por Bitcarrier. La línea horizontal es el límite de velocidad. La línea vertical marca el inicio de las multas.</Ayuda>
     </h3>
   )
 
@@ -278,6 +278,23 @@ function Velocidad({ K: _K }: { K: Computed }) {
     return <>{heading()}{desc}<div id="v-chart" className="chart"><p className="muted">No hay tramos con ese filtro en este corredor.</p></div></>
   }
   const vals = series.flatMap((s) => s.ys.filter((x: number | null) => x != null)) as number[]
+  // Cada serie menos su propio promedio de 2019 (media móvil de 3 meses); la diferencia es con menos sin cámara.
+  const media = (a: (number | null)[]) => {
+    const f = a.filter((x): x is number => x != null)
+    return f.length ? f.reduce((s, x) => s + x, 0) / f.length : null
+  }
+  const cambio = (a: (number | null)[]) => {
+    const base = media(a.slice(0, 12))
+    return base == null ? null : a.map((_, i) => {
+      const m = media(a.slice(Math.max(0, i - 1), Math.min(a.length, i + 2)))
+      return m == null ? null : m - base
+    })
+  }
+  const cCam = v.cam.n ? cambio(Array.from(v.cam.p85)) : null
+  const cSin = v.sin.n ? cambio(Array.from(v.sin.p85)) : null
+  const dif = cCam && cSin ? cCam.map((x, i) => (x == null || cSin[i] == null ? null : x - cSin[i]!)) : null
+  const conSigno = (x: number | null) => (x == null ? 'sin dato' : `${x > 0 ? '+' : x < 0 ? '−' : ''}${fmt.dec(Math.abs(x))}`)
+  const ticks = xs.filter((m) => m % (P.m1 - P.m0 > 24 ? 6 : 2) === 0)
   const items: LegendItem[] = [
     ...(v.cam.n ? [{ label: sitio ? `${nomCam} (${v.cam.n} ${v.cam.n > 1 ? 'tramos' : 'tramo'})` : `Tramos con cámara (${v.cam.n})`, color: C.cam }] : []),
     ...(v.sin.n ? [{ label: sitio ? `${nomSin} (${v.sin.n} tramos)` : `Tramos sin cámara (${v.sin.n})`, color: C.ctrl, dash: true }] : []),
@@ -301,10 +318,33 @@ function Velocidad({ K: _K }: { K: Computed }) {
           vlines: [{ x: 16, label: 'Multas desde may-2020', color: C.ink2 }],
           height: 220, yFormat: (d: number) => d,
           tooltip: (i: number) =>
-            `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label}: <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
+            `<b>${mesLabel(i)}</b><br>${series.map((s) => `${legendDot(s.color)} ${s.label} <b>${s.ys[i] == null ? 'sin dato' : `${fmt.dec(s.ys[i])} km/h`}</b>`).join('<br>')}`,
         })}
       />
-      <p className="caveat" id="v-note">P85 (percentil 85): el 85 % de los vehículos va a esa velocidad o más despacio. Mide la velocidad alta habitual, no el promedio: 15 de cada 100 vehículos van más rápido.</p>
+      {dif ? (
+        <>
+          <p className="mb-1 mt-5 text-small font-semibold">
+            Diferencia entre con y sin cámara
+            <Ayuda>Cada serie se compara con su propio promedio de 2019 (media móvil de 3 meses) y se resta el cambio de los tramos sin cámara al de los tramos con cámara. Sobre cero, la velocidad de los tramos con cámara quedó más alta, respecto de su nivel de 2019, que la de los tramos sin cámara; bajo cero, quedó más baja.</Ayuda>
+          </p>
+          <Chart
+            id="v-dif"
+            draw={(el) => diffChart(el, {
+              xs, ds: dif, xDomain: [P.m0, P.m1], height: 170, minLim: 3, xTicks: ticks, xTickFormat: monthTick,
+              yLabel: 'Diferencia (km/h)', labels: ['Velocidad más alta con cámara', 'Velocidad más baja con cámara'],
+              tooltip: (i: number) => {
+                const d = dif[i]
+                if (d == null) return `<b>${mesLabel(i)}</b><br>sin dato`
+                const lectura = Math.abs(d) < 0.05 ? 'sin diferencia' : d > 0 ? 'velocidad más alta con cámara' : 'velocidad más baja con cámara'
+                return `<b>${mesLabel(i)}</b><br>${legendDot(C.cam)} ${nomCam} <b>${conSigno(cCam![i])} km/h</b><br>${legendDot(C.ctrl)} ${nomSin} <b>${conSigno(cSin![i])} km/h</b><br>Diferencia de <b>${conSigno(d)} km/h</b>, ${lectura}<br><span class="muted">cambio frente al promedio de 2019</span>`
+              },
+            })}
+          />
+        </>
+      ) : (
+        <p className="note">Para ver el cambio frente a 2019 hacen falta tramos con y sin cámara con datos de velocidad en 2019.</p>
+      )}
+      <p className="caveat" id="v-note">El P85, o percentil 85, indica que el 85 % de los vehículos va a esa velocidad o más despacio. Mide la velocidad alta habitual, no el promedio: 15 de cada 100 vehículos van más rápido.</p>
     </>
   )
 }

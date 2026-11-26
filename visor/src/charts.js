@@ -135,11 +135,11 @@ export function lineChart(el, o) {
     svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b).attr('stroke', C.grid);
   }
   // bandas de contexto
-  for (const b of o.carriles ? [] : o.bands ?? []) {
+  for (const b of o.carriles && !o.sombra ? [] : o.bands ?? []) {
     const x0 = Math.max(x(b.x0), m.l);
     const x1 = Math.min(x(b.x1), W - m.r);
     if (x1 <= x0) continue;
-    svg.append('rect').attr('class', `band ${b.cls ?? ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
+    svg.append('rect').attr('class', `band ${b.cls ?? ''}${o.sombra ? ' fuerte' : ''}`).attr('x', x0).attr('width', x1 - x0).attr('y', m.t).attr('height', H - m.t - m.b);
   }
   // Las etiquetas van después de todas las bandas para que ninguna las tape.
   for (const b of o.carriles ? [] : o.bands ?? []) {
@@ -400,7 +400,7 @@ export function diffChart(el, o) {
   const m = { t: 14, r: o.right ?? 16, b: 36, l: o.left ?? 78 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'linechart');
   const x = d3.scaleLinear(o.xDomain ?? d3.extent(o.xs), [m.l, W - m.r]);
-  const lim = Math.max(10, d3.max(o.ds, (d) => Math.abs(d)) || 10);
+  const lim = Math.max(o.minLim ?? 10, d3.max(o.ds, (d) => (d == null ? 0 : Math.abs(d))) || 0);
   const y = d3.scaleLinear([-lim, lim], [H - m.b, m.t]).nice(2);
   for (const b of o.bands ?? []) {
     const x0 = Math.max(x(b.x0), m.l), x1 = Math.min(x(b.x1), W - m.r);
@@ -414,7 +414,7 @@ export function diffChart(el, o) {
   const xa = d3.axisBottom(x).tickSize(0).tickPadding(12).tickFormat(o.xTickFormat ?? String);
   if (o.xTicks) xa.tickValues(o.xTicks.filter((t) => t >= x.domain()[0] && t <= x.domain()[1]));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa).call((g) => g.select('.domain').remove());
-  const area = (f) => d3.area().x((d, i) => x(o.xs[i])).y0(y(0)).y1((d) => y(f(d))).curve(d3.curveLinear)(o.ds);
+  const area = (f) => d3.area().defined((d) => d != null).x((d, i) => x(o.xs[i])).y0(y(0)).y1((d) => y(f(d))).curve(d3.curveLinear)(o.ds);
   svg.append('path').attr('d', area((d) => Math.max(d, 0))).attr('fill', C.cam).attr('opacity', 0.85);
   svg.append('path').attr('d', area((d) => Math.min(d, 0))).attr('fill', C.ctrl).attr('opacity', 0.7);
   svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C.ink).attr('stroke-width', 1.25);

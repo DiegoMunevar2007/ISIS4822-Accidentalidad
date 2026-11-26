@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { ACTORES, CLASE_LABEL, PERIODOS } from '@/data.js'
 import { useStore } from '@/store'
 import { Select } from '@/components/ui/select'
@@ -126,7 +126,7 @@ export function Filters() {
         />
       </div>
       <div className="more-col">
-        <span>Radio alrededor de la cámara: <b>{radio ?? st.radio} m</b></span>
+        <span>Radio alrededor de la cámara de <b>{radio ?? st.radio} m</b></span>
         <Slider
           min={150} max={1000} step={50}
           value={[radio ?? st.radio]}
@@ -148,6 +148,7 @@ export function Filters() {
         <section className="filters flex items-end gap-3" id="filters">
           <SheetTrigger asChild>
             <Button className="h-10">
+              <SlidersHorizontal className="size-4 text-muted-foreground" />
               Filtros
               {nMore > 0 && <span className="font-semibold text-primary">({nMore})</span>}
               <ChevronDown className="size-4 text-muted-foreground" />
@@ -214,6 +215,7 @@ export function Filters() {
       <div className="f f-more static" id="more-filters">
         <PopoverTrigger asChild>
           <Button className="group h-10 data-[state=open]:border-ring data-[state=open]:ring-[3px] data-[state=open]:ring-ring/30">
+            <SlidersHorizontal className="size-4 text-muted-foreground" />
             Más filtros
             {nMore > 0 && <span className="font-semibold text-primary">({nMore})</span>}
             <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
@@ -252,7 +254,7 @@ export function Filters() {
         />
       </div>
       <div className="more-col">
-        <span>Radio alrededor de la cámara: <b>{radio ?? st.radio} m</b></span>
+        <span>Radio alrededor de la cámara de <b>{radio ?? st.radio} m</b></span>
         <Slider
           min={150} max={1000} step={50}
           value={[radio ?? st.radio]}
