@@ -36,7 +36,7 @@ function Grupo({ titulo, filas, ir }: { titulo: string; filas: Pregunta[]; ir: (
           <TableCell className="py-3 text-small text-muted-foreground">{p.accion}</TableCell>
           <TableCell className="py-3 text-small text-muted-foreground">{p.objetivo}</TableCell>
           <TableCell className="py-3 text-right">
-            <Button size="small" onClick={() => ir(p)}>Ver en el visor</Button>
+            <Button size="small" onClick={() => ir(p)}>Ver en el dashboard</Button>
           </TableCell>
         </TableRow>
       ))}
@@ -61,7 +61,7 @@ export function Preguntas() {
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent id="preguntas" aria-describedby="preguntas-desc" className="max-w-[920px]">
         <DialogTitle asChild>
-          <h2 className="m-0 text-[1.5rem] font-extrabold tracking-tight">Preguntas que responde el visor (Why)</h2>
+          <h2 className="m-0 text-[1.5rem] font-extrabold tracking-tight">Preguntas que responde el dashboard (Why)</h2>
         </DialogTitle>
         <DialogDescription asChild>
           <p className="sub mb-4" id="preguntas-desc">Cada pregunta indica qué se hace con los datos (comparar, descubrir, identificar) y sobre qué (distribución, tendencias, forma, extremos, correlación).</p>

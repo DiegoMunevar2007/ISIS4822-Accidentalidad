@@ -415,8 +415,13 @@ export function diffChart(el, o) {
   if (o.xTicks) xa.tickValues(o.xTicks.filter((t) => t >= x.domain()[0] && t <= x.domain()[1]));
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`).call(xa).call((g) => g.select('.domain').remove());
   const area = (f) => d3.area().defined((d) => d != null).x((d, i) => x(o.xs[i])).y0(y(0)).y1((d) => y(f(d))).curve(d3.curveLinear)(o.ds);
-  svg.append('path').attr('d', area((d) => Math.max(d, 0))).attr('fill', C.cam).attr('opacity', 0.85);
-  svg.append('path').attr('d', area((d) => Math.min(d, 0))).attr('fill', C.ctrl).attr('opacity', 0.7);
+  // El área cubre todos los meses; el recorte la deja dentro del periodo filtrado.
+  const clipId = `clip-${Math.random().toString(36).slice(2, 9)}`;
+  svg.append('clipPath').attr('id', clipId).append('rect')
+    .attr('x', m.l).attr('y', 0).attr('width', W - m.l - m.r).attr('height', H - m.b);
+  const ga = svg.append('g').attr('clip-path', `url(#${clipId})`);
+  ga.append('path').attr('d', area((d) => Math.max(d, 0))).attr('fill', C.cam).attr('opacity', 0.85);
+  ga.append('path').attr('d', area((d) => Math.min(d, 0))).attr('fill', C.ctrl).attr('opacity', 0.7);
   svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C.ink).attr('stroke-width', 1.25);
   if (o.yLabel) yAxisLabel(svg, o.yLabel, m, H);
   if (o.labels) {
@@ -434,29 +439,36 @@ export function diffChart(el, o) {
 }
 
 // ---------------------------------------------------------------- contexto con brush
-/** Barras mensuales pequeñas con un selector de rango (en días). */
-export function contextBrush(el, { monthly, monthStartDay, range, onBrush }) {
+/** Barras mensuales pequeñas con un selector de rango (en días). `domain` acota la franja al periodo filtrado. */
+export function contextBrush(el, { monthly, monthStartDay, range, onBrush, domain = [0, 1461] }) {
   el.innerHTML = '';
   const W = el.clientWidth || 600;
   const H = 62;
   const m = { t: 4, r: 14, b: 22, l: 50 };
   const svg = d3.select(el).append('svg').attr('width', W).attr('height', H).attr('class', 'context');
-  const x = d3.scaleLinear([0, 1461], [m.l, W - m.r]);
-  const y = d3.scaleLinear([0, d3.max(monthly) || 1], [H - m.b, m.t]);
-  svg.append('g').selectAll('rect').data(monthly).join('rect')
-    .attr('x', (d, i) => x(monthStartDay[i]) + 0.5)
-    .attr('width', (d, i) => Math.max(1, x(monthStartDay[i + 1] ?? 1461) - x(monthStartDay[i]) - 1))
-    .attr('y', (d) => y(d)).attr('height', (d) => y(0) - y(d))
-    .attr('fill', (d, i) => (i < 12 ? '#9aa0a6' : i < 24 ? '#d9d9d4' : '#D9959F'));
+  const [d0, d1] = domain;
+  const x = d3.scaleLinear(domain, [m.l, W - m.r]);
+  const meses = monthly.map((v, i) => ({ v, i })).filter(({ i }) => monthStartDay[i] >= d0 && monthStartDay[i] < d1);
+  const y = d3.scaleLinear([0, d3.max(meses, (d) => d.v) || 1], [H - m.b, m.t]);
+  svg.append('g').selectAll('rect').data(meses).join('rect')
+    .attr('x', ({ i }) => x(monthStartDay[i]) + 0.5)
+    .attr('width', ({ i }) => Math.max(1, x(monthStartDay[i + 1] ?? 1461) - x(monthStartDay[i]) - 1))
+    .attr('y', ({ v }) => y(v)).attr('height', ({ v }) => y(0) - y(v))
+    .attr('fill', ({ i }) => (i < 12 ? '#9aa0a6' : i < 24 ? '#d9d9d4' : '#D9959F'));
+  // Con un solo año se marcan trimestres; con varios, el inicio de cada año.
+  const cada = meses.length > 12 ? 12 : 3;
+  const marcas = meses.filter(({ i }) => i % cada === 0).map(({ i }) => i);
+  const nombres = { 3: 'abr', 6: 'jul', 9: 'oct' };
   svg.append('g').attr('class', 'axis x').attr('transform', `translate(0,${H - m.b})`)
-    .call(d3.axisBottom(x).tickValues([0, 365, 731, 1096]).tickSize(3).tickFormat((d, i) => 2019 + i))
+    .call(d3.axisBottom(x).tickValues(marcas.map((i) => monthStartDay[i])).tickSize(3)
+      .tickFormat((d, k) => nombres[marcas[k] % 12] ?? String(2019 + Math.floor(marcas[k] / 12))))
     .call((g) => g.select('.domain').attr('stroke', C.grid));
   const brush = d3.brushX().extent([[m.l, m.t], [W - m.r, H - m.b]])
     .on('end', (ev) => {
       if (!ev.sourceEvent) return;
       if (!ev.selection) return onBrush(null);
       const [a, b] = ev.selection.map(x.invert).map(Math.round);
-      onBrush(b - a < 7 ? null : [Math.max(0, a), Math.min(1460, b)]);
+      onBrush(b - a < 7 ? null : [Math.max(d0, a), Math.min(d1 - 1, b)]);
     });
   const gb = svg.append('g').attr('class', 'brush').call(brush);
   if (range) gb.call(brush.move, range.map(x));

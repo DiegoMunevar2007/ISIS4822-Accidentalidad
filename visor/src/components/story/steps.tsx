@@ -4,11 +4,11 @@ import { setState, type State } from '@/store'
 import { useUi } from '@/ui-store'
 
 export const ACTS = [
-  { name: 'Acto I', label: 'Contexto', steps: [0, 1] },
-  { name: 'Acto II', label: 'Evidencia', steps: [2, 3, 4, 5, 6] },
-  { name: 'Acto III', label: 'Lectura', steps: [7, 8] },
-  // La copa del martini: después del recorrido guiado, el visor queda abierto.
-  { name: 'Exploración', label: 'Exploración libre', steps: [9] },
+  { name: 'Acto I', label: 'Inicio', steps: [0, 1] },
+  { name: 'Acto II', label: 'Datos', steps: [2, 3, 4, 5, 6] },
+  { name: 'Acto III', label: 'Conclusiones', steps: [7, 8] },
+  // La copa del martini: después del recorrido guiado, el dashboard queda abierto.
+  { name: 'Exploración', label: 'Explorar', steps: [9] },
 ]
 
 /** Claves del estado que la historia vigila para detectar que el usuario se salió del guion. */
@@ -91,8 +91,15 @@ export const STEPS: StepDef[] = [
     act: 1, title: 'Antes y después en el mapa',
     body: (M) => {
       const { antes, despues } = M.top
-      const rep = antes.filter((c) => despues.includes(c)).length
-      return <>Los corredores con más siniestros con muertos cerca de las cámaras fueron {lista(antes)} en 2019 y {lista(despues)} en 2021–22, y {rep} de {antes.length} se repiten.</>
+      const quedan = antes.filter((c) => despues.includes(c))
+      const salen = antes.filter((c) => !despues.includes(c))
+      const entran = despues.filter((c) => !antes.includes(c))
+      const cambio = !entran.length && !salen.length
+        ? 'Son los mismos en los dos periodos.'
+        : !quedan.length
+          ? 'Ninguno se repite entre los dos periodos.'
+          : `${lista(quedan)} ${quedan.length > 1 ? 'se mantienen' : 'se mantiene'}, y ${lista(entran)} ${entran.length > 1 ? 'reemplazan' : 'reemplaza'} a ${lista(salen)}.`
+      return <>Estos son los corredores con más siniestros con muertos cerca de las cámaras.<br />En 2019 fueron {lista(antes)}.<br />En 2021–22 fueron {lista(despues)}.<br />{cambio}</>
     },
     hint: 'El selector de periodo cambia los puntos y el mapa no se mueve.',
     patch: (f) => ({ ...f, tab: 'mapa', mapa: true, gravedad: 'fatal', periodo: 'antes' }),
@@ -127,7 +134,7 @@ export const STEPS: StepDef[] = [
   },
   {
     act: 2, title: 'Lo que los datos no dicen',
-    body: (M) => <>Los resultados describen lo ocurrido y no prueban que las cámaras lo causaran. En la zona con cámara hubo {fmt.int(fatal(M).n)} siniestros con muertos en cuatro años.</>,
+    body: (M) => <>Con estas cifras no podemos saber si los cambios se deben a las cámaras. En la zona con cámara hubo {fmt.int(fatal(M).n)} siniestros con muertos en cuatro años.</>,
     patch: (f) => ({ ...f, tab: 'mapa', mapa: false, gravedad: 'grave' }),
     focus: ['#panel-ficha'],
     cards: [
@@ -144,14 +151,13 @@ export const STEPS: StepDef[] = [
   },
   {
     act: 3, title: 'Ahora, a explorar',
-    body: () => <>Hasta aquí fue un recorrido guiado. Desde este punto el visor queda abierto y cada filtro, vista y mapa responde a lo que se elija.</>,
-    hint: 'Los filtros ya no están limitados por la historia.',
+    body: () => <>Hasta aquí fue un recorrido guiado. Desde este punto el dashboard queda abierto y cada filtro, vista y mapa responde a lo que se elija.</>,
     patch: (f) => ({ ...f, tab: 'mapa', mapa: true }),
     focus: ['#panel-map', '#panel-ficha', '#panel-serie', '#panel-panorama', '#panel-ab'], allowAll: true,
     acciones: [
       { label: 'Ver los corredores', run: () => setState({ tab: 'panorama' }) },
       { label: 'Comparar otros meses', run: () => setState({ tab: 'ab' }) },
-      { label: 'Ver las preguntas que responde el visor', run: () => useUi.getState().openPreguntas() },
+      { label: 'Ver las preguntas que responde el dashboard', run: () => useUi.getState().openPreguntas() },
     ],
   },
 ]

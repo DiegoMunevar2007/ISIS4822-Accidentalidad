@@ -18,6 +18,7 @@
 \renewcommand{\textfraction}{0.06}
 \renewcommand{\floatpagefraction}{0.85}
 \setlength{\intextsep}{6pt}
+\usepackage[export]{adjustbox}
 \usepackage{graphicx,xcolor,booktabs,tabularx,array,caption,fancyhdr,titlesec,enumitem}
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{img/}}
@@ -139,11 +140,18 @@ Después del procesamiento el dashboard trabaja sobre una tabla de 109.137 ítem
 
 No caracterizamos todas las columnas sino las que sostienen alguna decisión, y para escogerlas miramos si ayudan a responder una pregunta, si se pueden comparar entre 2019 y 2022 y si están completas. El criterio de comparabilidad fue el que más variables dejó por fuera, porque los libros cambian de estructura entre años y una columna que aparece solo en algunos haría que un cambio en el registro se leyera como un cambio en la ciudad. Para cada variable que usamos indicamos su tipo y su orden, ya que de eso depende después qué canal le podemos asignar.
 
-\begin{table}[!htbp]\centering\small
-\begin{tabularx}{\linewidth}{P{3.2cm}P{2.3cm}P{3cm}L}
+{\small
+\begin{longtable}{P{3.2cm}P{2.3cm}P{3cm}P{\dimexpr\linewidth-8.5cm-6\tabcolsep\relax}}
 \toprule
 \textbf{Variable} & \textbf{Tipo} & \textbf{Orden y cardinalidad} & \textbf{Por qué la usamos}\\
 \midrule
+\endhead
+\bottomrule
+\endfoot
+\bottomrule
+\noalign{\vskip6pt}
+\caption{Variables que usamos}
+\endlastfoot
 \multicolumn{4}{l}{\textit{Siniestros y actores}}\\
 Fecha & Ordinal & Secuencial y cíclica, 2019 a 2022 & Define el antes y el después y permite ver tendencias.\\
 Ubicación & Posición & Latitud y longitud & Sin ella no se sabe qué tan cerca de una cámara ocurrió.\\
@@ -159,18 +167,16 @@ Corredor y vía secundaria & Categórico & 18 corredores & Son la unidad para co
 Límite de velocidad & Cuantitativo & Secuencial, 30 a 60 km/h & Da una referencia para leer la velocidad.\\
 Infracciones & Categórico & 7 combinaciones & Distingue sitios de velocidad y de semáforo.\\
 \midrule
-\multicolumn{4}{l}{\textit{Velocidades}}\\
+\multicolumn{4}{l}{\textit{Velocidades}}\\*
 Origen y destino del vector & Categórico & Identifica el tramo & Une cada medición con un trazado.\\
 Instante & Ordinal & Cada 15 minutos & Permite agregar por mes.\\
 Velocidad promedio & Cuantitativo & Secuencial, en km/h & Es la base del percentil 85.\\
-\bottomrule
-\end{tabularx}
-\caption{Variables que usamos}
-\end{table}
+\end{longtable}
+}
 
 Las que dejamos por fuera están en la siguiente tabla, agrupadas por la razón del descarte. Varias están completas y podrían ser interesantes, como el sexo o la localidad, pero agregarlas habría sumado filtros y gráficas que no responden ninguna de las preguntas, y cada control de más hace más difícil encontrar lo que se busca.
 
-\begin{table}[!htbp]\centering\small
+\begin{table}[H]\centering\small
 \begin{tabularx}{\linewidth}{P{5.6cm}L}
 \toprule
 \textbf{Variables} & \textbf{Por qué no}\\
@@ -900,7 +906,7 @@ El tamaño mínimo de letra, las ayudas que se abren también con el foco del te
 
 \section{Evolución del dashboard y consideraciones de diseño}
 
-En esta sección contamos cómo estaba cada parte del dashboard, qué cambiamos y por qué.
+En esta sección contamos cómo estaba cada parte del dashboard, qué cambiamos y por qué, empezando por sus cuatro momentos y siguiendo con el mapa, la serie, los corredores, la comparación de meses, la historia y la identidad.
 
 \subsection{Cuatro momentos del dashboard}
 
@@ -922,8 +928,20 @@ La tercera fue una reescritura de la interfaz en la que cambiamos los nombres de
 
 Con 109.137 puntos no se veía ningún patrón, por lo que con poco zoom los agrupamos en celdas de densidad. También agregamos la casilla ``Visualizar accidentes en corredor'', que muestra toda la vía sin cambiar la comparación con y sin cámara, y dejamos el mapa siempre a la izquierda, sin márgenes y con la opción de ocultarlo. En las vistas donde un filtro no cambia nada dejamos de mostrarlo, porque confundía.
 
+\begin{figure}[H]\centering
+\adjincludegraphics[trim={{.0156\width} {0\height} {.4928\width} {.2987\height}},clip,width=0.49\linewidth,height=0.25\textheight,keepaspectratio]{v1_mapa}\hfill
+\includegraphics[width=0.49\linewidth,height=0.25\textheight,keepaspectratio]{i_mapa}
+\caption{El mapa en la primera versión, solo con puntos, y en la actual, con celdas de densidad y guía de colores}
+\end{figure}
+
 
 Al principio teníamos barras de antes y después con una escala distinta para cada zona, y el resultado quedaba escondido en una frase. Ahora son dos barras de cambio porcentual sobre una escala común, con las cifras en siniestros por mes y la diferencia escrita debajo, y el periodo elegido actúa como el ``después'' frente a 2019. Además avisamos cuando hay pocos siniestros. La diferencia que mostramos en \% es la resta entre los dos cambios, así que no se debe leer como un cambio relativo.
+
+\begin{figure}[H]\centering
+\adjincludegraphics[trim={{.5222\width} {.1662\height} {.0206\width} {.6133\height}},clip,width=0.49\linewidth]{v1_mapa}\hfill
+\includegraphics[width=0.49\linewidth]{i_cambio}
+\caption{Las barras de antes y después de la primera versión y las barras de cambio actuales}
+\end{figure}
 
 \subsection{Evolución}
 

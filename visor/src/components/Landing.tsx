@@ -8,7 +8,7 @@ import { baseMask, porMes } from '@/data.js'
 import { startTour } from '@/components/Tour'
 import { startStory } from '@/components/story/controller'
 
-/** Siniestros por mes de toda la ciudad: la imagen que resume el visor, con el momento de instalación marcado. */
+/** Siniestros por mes de toda la ciudad: la imagen que resume el dashboard, con el momento de instalación marcado. */
 function SerieResumen({ meses }: { meses: ArrayLike<number> }) {
   const W = 440, H = 214, l = 8, r = 8, t = 34, b = 28
   const n = meses.length
@@ -62,7 +62,7 @@ export function Landing() {
             </DialogTitle>
             <DialogDescription asChild>
               <p className="lede" id="landing-desc">
-                Bogotá instaló cámaras de fotodetección entre noviembre de 2019 y marzo de 2020. Este visor compara los siniestros, las víctimas y la velocidad del tráfico cerca de ellas con las de vías sin cámara.
+                Bogotá instaló cámaras de fotodetección entre noviembre de 2019 y marzo de 2020. Este dashboard compara los siniestros, las víctimas y la velocidad del tráfico cerca de ellas con las de vías sin cámara.
               </p>
             </DialogDescription>
 
@@ -78,9 +78,9 @@ export function Landing() {
                 </span>
               </button>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => { close(); startTour() }}><Compass className="size-4" />Cómo usar el visor</Button>
+                <Button onClick={() => { close(); startTour() }}><Compass className="size-4" />Cómo usar el dashboard</Button>
                 <Button onClick={close}><Telescope className="size-4" />Explorar libremente</Button>
-                <Button onClick={() => { close(); openPreguntas() }}><MessageCircleQuestion className="size-4" />Preguntas que responde el visor (Why)</Button>
+                <Button onClick={() => { close(); openPreguntas() }}><MessageCircleQuestion className="size-4" />Preguntas que responde el dashboard (Why)</Button>
               </div>
             </div>
 

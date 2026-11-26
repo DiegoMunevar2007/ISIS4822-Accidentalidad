@@ -64,7 +64,7 @@ export function Story() {
           </div>
           <div className="story-progress flex gap-3" id="story-progress">
             {ACTS.map((a, ai) => (
-              <div key={a.name} className="flex flex-col gap-1.5" style={{ flex: a.steps.length, minWidth: 68 }}>
+              <div key={a.name} className="flex flex-col gap-1.5" style={{ flex: a.steps.length, minWidth: 'max-content' }}>
                 <div className="flex gap-1">
                   {a.steps.map((k) => (
                     <button
@@ -111,7 +111,7 @@ export function Story() {
           <Alert id="story-warn">
             <TriangleAlert />
             <AlertDescription className="text-small">
-              Exploración libre: el texto describe el paso {i + 1}.{' '}
+              Cambió la vista y el texto describe el paso {i + 1}.{' '}
               <button type="button" className="font-semibold text-primary underline underline-offset-2" onClick={() => applyStep(i)}>Volver al paso</button>
             </AlertDescription>
           </Alert>
@@ -121,7 +121,7 @@ export function Story() {
             <ChevronLeft className="size-4" /> Atrás
           </Button>
           <Button size="small" variant="primary" id="story-next" onClick={() => (last ? stopStory(true) : applyStep(i + 1))}>
-            {last ? 'Explorar el visor' : 'Siguiente'} {!last && <ChevronRight className="size-4" />}
+            {last ? 'Explorar el dashboard' : 'Siguiente'} {!last && <ChevronRight className="size-4" />}
           </Button>
         </CardFooter>
       </Card>

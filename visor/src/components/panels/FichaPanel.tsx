@@ -24,7 +24,6 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
   const zonaAD = antesDespues(K.mZona, d0, d1)
   const ctrlAD = antesDespues(K.mCtrl, d0, d1)
   const diff = zonaAD.cambio != null && ctrlAD.cambio != null ? zonaAD.cambio - ctrlAD.cambio : null
-  const pp = diff == null ? '—' : `${diff > 0 ? '+' : ''}${fmt.dec(diff * 100)}%`
   const aviso =
     sinCambio ? null : diff == null ? 'No hay suficientes datos en este ámbito para comparar.'
       : zonaAD.antes + zonaAD.despues < 30 ? `Pocos siniestros (${fmt.int(zonaAD.antes + zonaAD.despues)}): interpretar con cautela.` : null
@@ -40,7 +39,7 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
         <h3 className="sec first">
           Con cámara y sin cámara
           <Ayuda>
-            Cada barra es el cambio del promedio mensual de {nLabel(st)} frente a 2019. La zona con cámara son los siniestros a menos de {st.radio} m de una cámara; las vías sin cámara son el resto de la ciudad y sirven de referencia. La diferencia es la resta entre ambos cambios.
+            Cada barra es el cambio del promedio mensual de {nLabel(st)} frente a 2019. La zona con cámara son los siniestros a menos de {st.radio} m de una cámara; las vías sin cámara son el resto de la ciudad y sirven de referencia.
           </Ayuda>
         </h3>
         <p className="sub desc">Cambio del promedio mensual entre 2019 y {dLab}.</p>
@@ -62,7 +61,6 @@ export function FichaPanel({ K, visible }: { K: Computed; visible: boolean }) {
             },
           ]}
         />
-        <p className="diff-line">La diferencia entre ambas es de <b>{pp}</b></p>
         </>)}
         {aviso && (
           <Alert className="mt-2 border-border">

@@ -113,7 +113,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
         height: 260,
       }),
       context: (el) => contextBrush(el, {
-        monthly: [...K.mScope], monthStartDay, range: st.rango, onBrush: (rg: [number, number] | null) => set({ rango: rg }),
+        monthly: [...K.mScope], monthStartDay, range: st.rango, domain: [monthStartDay[P.m0], monthStartDay[P.m1 + 1]], onBrush: (rg: [number, number] | null) => set({ rango: rg }),
       }),
       // La franja es una interacción sin pista visual: una línea corta, pegada a ella.
       note: <>{st.rango ? 'Clic fuera de la selección para ver todo el periodo.' : 'Arrastrar sobre esta franja sirve para acercar un periodo.'}</>,
@@ -165,7 +165,7 @@ export function SeriePanel({ K, visible }: { K: Computed; visible: boolean }) {
       title: 'Un año frente a otro',
       sub: 'Un recuadro por año, de enero a diciembre y con la misma escala',
       desc: 'Cada año se compara con 2019, mes a mes.',
-      help: 'Un recuadro por año, de enero a diciembre y con la misma escala vertical. Los colores son los de todo el visor, con gris para 2019, gris claro para 2020 y rojo para 2021 y 2022. En cada recuadro, la línea gris fina es 2019, de referencia.',
+      help: 'Un recuadro por año, de enero a diciembre y con la misma escala vertical. Los colores son los de todo el dashboard, con gris para 2019, gris claro para 2020 y rojo para 2021 y 2022. En cada recuadro, la línea gris fina es 2019, de referencia.',
       legend: <ChartLegend items={items} />,
       custom,
       note: null,
