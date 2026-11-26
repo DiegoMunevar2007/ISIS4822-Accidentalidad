@@ -8,10 +8,16 @@
 \usepackage[sfdefault]{inter}
 \usepackage{sourcecodepro}
 \usepackage[spanish,es-noshorthands,es-tabla]{babel}
-\usepackage[moderate]{savetrees}
+\usepackage[moderate,paragraphs=normal]{savetrees}
 \usepackage{geometry}
 \geometry{a4paper,margin=1.9cm,top=2.3cm,headheight=22pt,headsep=12pt}
-\usepackage{ragged2e,placeins,float,longtable}
+\usepackage{ragged2e,float,longtable}
+\usepackage{placeins}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.85}
+\setlength{\intextsep}{6pt}
 \usepackage{graphicx,xcolor,booktabs,tabularx,array,caption,fancyhdr,titlesec,enumitem}
 \usepackage[hidelinks]{hyperref}
 \graphicspath{{img/}}
@@ -41,7 +47,7 @@
 \newcolumntype{L}{>{\RaggedRight\arraybackslash}X}
 \newcolumntype{P}[1]{>{\RaggedRight\arraybackslash}p{#1}}
 \newcommand{\pendiente}[1]{\par\medskip\noindent\fcolorbox{amarillo}{pend}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{Pendiente.} #1}}\par\medskip}
-\newcommand{\figura}[3][0.92]{\begin{figure}[H]\centering\includegraphics[width=#1\linewidth,height=0.42\textheight,keepaspectratio]{#2}\caption{#3}\end{figure}}
+\newcommand{\figura}[3][0.92]{\begin{figure}[!htbp]\centering\includegraphics[width=#1\linewidth,height=0.42\textheight,keepaspectratio]{#2}\caption{#3}\end{figure}}
 
 \begin{document}
 
@@ -65,7 +71,7 @@
 \end{titlepage}
 
 \tableofcontents
-\clearpage
+\bigskip
 
 \section{Introducción}
 
@@ -77,7 +83,7 @@ Por eso construimos un dashboard para comparar lo que ocurre cerca y lejos de la
 
 \subsection{Datos originales y tipo de dataset}
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{4.2cm}L}
 \toprule
 \textbf{Archivo recibido} & \textbf{Contenido}\\
@@ -88,10 +94,10 @@ GeoJSON de tramos Bitcarrier & 868 vectores de la red de sensores de velocidad.\
 Cinco libros de siniestralidad & Un libro por año de 2018 a 2022, con 148.943 siniestros.\\
 \bottomrule
 \end{tabularx}
-\caption{Archivos de partida, publicados en el portal de datos abiertos de movilidad de Bogotá}
+\caption{Archivos de partida, publicados por la Secretaría Distrital de Movilidad \cite{anuarios,camaras,velocidades}}
 \end{table}
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabular}{lrcl}
 \toprule
 \textbf{Libro} & \textbf{Siniestros} & \textbf{Coordenadas} & \textbf{Hojas principales}\\
@@ -109,9 +115,9 @@ Cinco libros de siniestralidad & Un libro por año de 2018 a 2022, con 148.943 s
 Los nombres de los campos cambian de un año a otro y solo el libro de 2022 trae coordenadas utilizables, porque el de 2018 tiene las columnas de latitud y longitud en cero y los anuarios de 2019 a 2021 dan el lugar como una dirección escrita. Los archivos de velocidad, por su parte, suman 96,6 millones de filas porque registran cada vector cada quince minutos.
 
 
-Siguiendo a Munzner, casi todo lo que recibimos son tablas planas, en las que cada fila es un ítem y cada columna un atributo, y las cámaras y los vectores Bitcarrier son además datos de geometría porque cada ítem trae una forma en el espacio. Todos son estáticos, ya que se entregan como archivos cerrados y no como un flujo.
+Siguiendo a Munzner \cite[sección 2.4]{munzner}, casi todo lo que recibimos son tablas planas, en las que cada fila es un ítem y cada columna un atributo, y las cámaras y los vectores Bitcarrier son además datos de geometría porque cada ítem trae una forma en el espacio. Todos son estáticos, ya que se entregan como archivos cerrados y no como un flujo.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{3.6cm}P{3.6cm}LP{3.4cm}}
 \toprule
 \textbf{Dataset} & \textbf{Tipo} & \textbf{Cada ítem es} & \textbf{Llave}\\
@@ -133,7 +139,7 @@ Después del procesamiento el dashboard trabaja sobre una tabla de 109.137 ítem
 
 No caracterizamos todas las columnas sino las que sostienen alguna decisión, y para escogerlas miramos si ayudan a responder una pregunta, si se pueden comparar entre 2019 y 2022 y si están completas. El criterio de comparabilidad fue el que más variables dejó por fuera, porque los libros cambian de estructura entre años y una columna que aparece solo en algunos haría que un cambio en el registro se leyera como un cambio en la ciudad. Para cada variable que usamos indicamos su tipo y su orden, ya que de eso depende después qué canal le podemos asignar.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{3.2cm}P{2.3cm}P{3cm}L}
 \toprule
 \textbf{Variable} & \textbf{Tipo} & \textbf{Orden y cardinalidad} & \textbf{Por qué la usamos}\\
@@ -162,9 +168,9 @@ Velocidad promedio & Cuantitativo & Secuencial, en km/h & Es la base del percent
 \caption{Variables que usamos}
 \end{table}
 
-Las que dejamos por fuera están en la siguiente tabla, agrupadas por la razón del descarte. Varias están completas y podrían ser interesantes, como el sexo o la localidad, pero agregarlas habría sumado filtros y gráficas que no responden ninguna de las preguntas, y para un usuario como Diana cada control de más hace más difícil encontrar lo que busca.
+Las que dejamos por fuera están en la siguiente tabla, agrupadas por la razón del descarte. Varias están completas y podrían ser interesantes, como el sexo o la localidad, pero agregarlas habría sumado filtros y gráficas que no responden ninguna de las preguntas, y cada control de más hace más difícil encontrar lo que se busca.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{5.6cm}L}
 \toprule
 \textbf{Variables} & \textbf{Por qué no}\\
@@ -184,13 +190,21 @@ Libro de 2018 & Sus coordenadas vienen en cero y no hay velocidades de ese año.
 \caption{Variables descartadas}
 \end{table}
 
+\subsection{Cómo procesamos los datos}
+
+Partimos de archivos que no fueron pensados para leerse juntos, así que antes de graficar tuvimos que llevarlos a una misma forma. Nos quedamos con los siniestros de 2019 a 2022 y homogeneizamos lo que cambiaba entre un año y otro, porque los nombres de las columnas no son los mismos, la gravedad y la clase vienen escritas como texto en unos libros y como códigos en otros, que tradujimos con el diccionario de los propios anuarios, y las marcas de los actores aparecen como ``SI'' y ``NO'' en 2019 y con otra convención en los años siguientes. Con las personas hicimos lo mismo y reunimos las distintas formas de registrar a un herido en una sola categoría, de modo que quedaran los niveles de ileso, herido y muerto para las cinco condiciones que comparamos.
+
+Después organizamos todo en tablas que se conectan por sus llaves, una con un siniestro por fila, otra con las personas involucradas y otras para los sitios de cámara, las cámaras, los tramos y las velocidades, con el fin de no repetir información y de que cada filtro actúe sobre una sola columna. La velocidad fue el paso que más redujo los datos, ya que pasamos de 96,6 millones de registros de quince minutos a un valor por tramo y por mes, que es el nivel de detalle que necesitan las preguntas y el que un navegador puede manejar.
+
+Por último revisamos que el resultado siguiera siendo fiel a las fuentes. Los siniestros fatales que quedaron por año son 493, 369, 462 y 538 entre 2019 y 2022, frente a 492, 369, 460 y 540 en los anuarios, una diferencia de a lo sumo dos siniestros por año que nos permitió confiar en la unión antes de construir las comparaciones. La forma en que ubicamos cada siniestro y calculamos los datos nuevos se explica a continuación.
+
 \subsection{Cómo enriquecimos los datos}
 
-Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con los libros solos no era posible saber qué pasó cerca de una cámara, que es la base de casi todas las preguntas. Por eso usamos la base de siniestros georreferenciados de la Secretaría Distrital de Movilidad, que cubre casi todos los siniestros de los anuarios. La tabla compara ambas fuentes año por año, porque la parte que no tiene ubicación queda por fuera del dashboard y hay que tenerla presente al leer las cifras, sobre todo en 2019, que es el año de referencia.
+Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con los libros solos no era posible saber qué pasó cerca de una cámara, que es la base de casi todas las preguntas. Para ubicar cada siniestro lo unimos por su número de formulario, que es la llave que comparten los anuarios y la información georreferenciada, de modo que no dependemos de comparar direcciones escritas de formas distintas. En 2022 las coordenadas son las que trae el mismo anuario. Para 2019 a 2021, cuyos anuarios no tienen coordenadas, las tomamos del histórico de siniestros georreferenciados de la Secretaría Distrital de Movilidad \cite{historico}, y lo comprobamos comparando por formulario una muestra de 200 siniestros de cada año, en la que casi todos los puntos coinciden con diferencias de centímetros. Esa capa llega hasta 2021, lo que explica que para 2022 se usen las coordenadas del anuario \cite{anuarios}.
 
-\pendiente{Confirmar el procedimiento exacto de georreferenciación.}
+Los siniestros sin ubicación quedan por fuera del dashboard, ya que no se pueden asignar a ninguna zona. La tabla compara los anuarios con lo que quedó, porque esa diferencia hay que tenerla presente al leer las cifras, sobre todo en 2019, que es el año de referencia y el que más siniestros pierde.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabular}{lrr}
 \toprule
 \textbf{Año} & \textbf{Siniestros en el anuario} & \textbf{Siniestros en el dashboard}\\
@@ -204,7 +218,30 @@ Como los anuarios de 2019 a 2021 dan el lugar como una dirección escrita, con l
 \caption{Cobertura de la información georreferenciada}
 \end{table}
 
-Con la ubicación derivamos la distancia de cada siniestro a la cámara más cercana, el sitio y el corredor, el tramo de velocidad sobre el que ocurrió, la zona (con cámara o vías sin cámara) y el periodo. Guardamos la distancia y no solo una marca de cerca o lejos, porque así el radio se puede cambiar desde el dashboard sin volver a procesar los datos. Las reglas de cada derivada y su razón están en la sección de supuestos.
+El inventario de cámaras también tuvo que enriquecerse. Las agrupamos en sitios con la primera parte de su identificador y ubicamos cada sitio en el punto medio de sus cámaras, y sacamos la fecha de resolución del texto en el que viene junto con el número de la resolución, para saber desde cuándo había cámaras en cada lugar. En las velocidades unimos los vectores de ambos sentidos de una misma vía en un solo tramo, porque los siniestros no indican en qué sentido ocurrieron. La siguiente tabla resume la regla con la que construimos cada dato derivado y la razón de cada una.
+
+\begin{table}[!htbp]\centering\small
+\begin{tabularx}{\linewidth}{P{3.4cm}P{6.2cm}L}
+\toprule
+\textbf{Dato derivado} & \textbf{Regla} & \textbf{Para qué}\\
+\midrule
+Sitio de cámara & Cámaras con el mismo prefijo del identificador, ubicadas en su punto medio & No repetir siniestros entre cámaras vecinas.\\
+Tipo de sitio & De velocidad si alguna cámara detecta la infracción C.29 y de semáforo en los demás casos & Distinguir qué controla cada sitio.\\
+Límite del sitio & El menor de sus cámaras & Leer la velocidad frente al límite más exigente.\\
+Distancia y sitio & Sitio de cámara más cercano a cada siniestro & Cambiar el radio sin volver a procesar.\\
+Tramo del siniestro & Tramo medido más cercano, a 30 metros o menos & Relacionar siniestros y velocidad.\\
+Intersección ambigua & Dos corredores medidos a 30 metros o menos & Poder excluir casos dudosos.\\
+Zona & Con cámara a 500 metros o menos y referencia si está sobre un tramo medido más lejos & Tener contra qué comparar.\\
+Tramo con cámara & Sitio de cámara a 150 metros o menos & Separar las velocidades con y sin cámara.\\
+Periodo & Antes en 2019, transición en 2020 y después en 2021 y 2022 & Comparar los mismos bloques en todas las vistas.\\
+Grave y fatal & Marcas a partir de la gravedad del siniestro & Filtrar y contar por severidad.\\
+Velocidad mensual & Percentil 85 por sentido en cada mes y promedio de los dos sentidos & Una medida por tramo en la misma unidad de los siniestros.\\
+\bottomrule
+\end{tabularx}
+\caption{Reglas de los datos derivados. La infracción C.29 corresponde al exceso de velocidad}
+\end{table}
+
+Guardamos la distancia de cada siniestro y no solo una marca de cerca o lejos, porque así el radio se puede cambiar desde el dashboard sin volver a procesar los datos, y las razones de cada umbral están en la sección de supuestos.
 
 \section{Why: para qué}
 
@@ -212,9 +249,9 @@ Con la ubicación derivamos la distancia de cada siniestro a la cámara más cer
 
 Las cámaras se instalaron en sitios que ya se consideraban críticos y las multas comenzaron en mayo de 2020, en plena pandemia, de modo que un conteo antes y después confunde el efecto de las cámaras con todo lo demás que pasó en la ciudad. El objetivo del dashboard es que una persona compare siniestros, víctimas y velocidad cerca de las cámaras frente a vías que vivieron las mismas condiciones sin tener cámara.
 
-Diseñamos para tres personas que llegan a ese problema con necesidades distintas y que se acercan con habilidades y dispositivos muy diferentes. Carolina es la usuaria primaria porque su trabajo es sostener o cambiar el programa con evidencia, así que cuando dos necesidades chocaban le dimos prioridad al detalle analítico, mientras que Andrés y Diana, que son secundarios, marcaron cuánto había que simplificar la primera pantalla y los mensajes, como se ve en la tabla de perfiles.
+Diseñamos para tres personas que llegan a ese problema con necesidades distintas y que se acercan con habilidades y dispositivos muy diferentes. El perfil primario es el de análisis, porque su trabajo es sostener o cambiar el programa con evidencia, así que cuando dos necesidades chocaban le dimos prioridad al detalle analítico, mientras que los perfiles secundarios marcaron cuánto había que simplificar la primera pantalla y los mensajes, como se ve en la tabla de perfiles.
 
-\begin{table}[H]\centering\footnotesize
+\begin{table}[!htbp]\centering\footnotesize
 \begin{tabularx}{\linewidth}{P{2.3cm}LLL}
 \toprule
  & \textbf{Carolina Méndez} & \textbf{Andrés Rojas} & \textbf{Diana Torres}\\
@@ -235,9 +272,9 @@ Reto & Red corporativa sin permiso para instalar software & No programa, necesit
 
 \subsection{Preguntas y requisitos}
 
-Las preguntas las planteamos nosotros a partir del problema y de los tres perfiles, y las expresamos con las acciones y objetivos de Munzner. Expresarlas de esa forma nos obligó a decir qué hay que hacer con los datos antes de pensar en cualquier gráfica, y nos sirvió para detectar cuándo dos preguntas pedían lo mismo y cuándo una pedía datos que no teníamos, como la de velocidad y gravedad.
+Las preguntas las planteamos nosotros a partir del problema y de los tres perfiles, y las expresamos con las acciones y objetivos de Munzner \cite[secciones 3.4 y 3.5]{munzner}. Expresarlas de esa forma nos obligó a decir qué hay que hacer con los datos antes de pensar en cualquier gráfica, y nos sirvió para detectar cuándo dos preguntas pedían lo mismo y cuándo una pedía datos que no teníamos, como la de velocidad y gravedad.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{Lll}
 \toprule
 \textbf{Pregunta} & \textbf{Acción} & \textbf{Objetivo}\\
@@ -256,13 +293,13 @@ Las preguntas las planteamos nosotros a partir del problema y de los tres perfil
 \caption{Las seis preguntas que planteamos y que el dashboard busca responder}
 \end{table}
 
-Las tres principales cubren lo que cualquiera de los tres perfiles preguntaría primero, que es a quién afectó, cuánto cambió frente a una referencia y en qué momento. La de víctimas está porque la meta de Carolina es reducir muertes y no todos los actores viales corren el mismo riesgo, la de cámara frente a no cámara porque sin referencia no hay forma de contestar la crítica sobre el recaudo, y la de tendencia porque la instalación coincidió con la pandemia y hace falta ver el momento del cambio. Las secundarias responden a necesidades más particulares, que son el lugar y la velocidad para Diana, que vive su ruta, y el corredor que más cambia para Andrés, que busca el caso que empeoró.
+Las tres principales cubren lo que cualquiera de los tres perfiles preguntaría primero, que es a quién afectó, cuánto cambió frente a una referencia y en qué momento. La de víctimas está porque la meta del programa es reducir muertes y no todos los actores viales corren el mismo riesgo, la de cámara frente a no cámara porque sin referencia no hay forma de contestar la crítica sobre el recaudo, y la de tendencia porque la instalación coincidió con la pandemia y hace falta ver el momento del cambio. Las secundarias responden a necesidades más particulares, que son saber dónde y a qué velocidad ocurre lo que pasa en una vía concreta e identificar el corredor que más cambia, incluido el que empeoró a pesar de la cámara.
 
 Usamos \textit{compare} cuando la respuesta sale de enfrentar dos grupos, \textit{discover} cuando no sabemos de antemano qué patrón hay, como el momento del quiebre o la relación entre velocidad y gravedad, e \textit{identify} cuando se busca un elemento puntual, el corredor extremo. Los objetivos siguen la misma lógica, de manera que la distribución aparece cuando importa cómo se reparte algo entre grupos, la tendencia cuando importa el momento, la forma cuando la respuesta es un patrón en el espacio, los extremos cuando se busca quién se sale del resto y la correlación cuando se quiere saber si dos variables se mueven juntas.
 
-De las metas, dolores y retos de cada perfil salen además los requisitos que el dashboard debería cumplir, que no son preguntas sobre los datos sino condiciones para que la respuesta le sirva a alguien, como no tener que instalar nada o poder leerlo en un celular. Marcamos la cobertura de cada uno, incluidos los que no cumplimos, porque de ahí sale lo que habría que hacer después.
+De las metas, dolores y retos de cada perfil salen además los requisitos que el dashboard debería cumplir, que no son preguntas sobre los datos sino condiciones para que la respuesta le sirva a alguien, como no tener que instalar nada o encontrar mensajes claros. Marcamos la cobertura de cada uno, incluidos los que no cumplimos, porque de ahí sale lo que habría que hacer después.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{LP{3cm}P{2.4cm}}
 \toprule
 \textbf{Requisito} & \textbf{De quién} & \textbf{Cobertura}\\
@@ -273,7 +310,6 @@ Filtrar por gravedad y actor vial & Carolina & Cubierto\\
 Encontrar el corredor que empeoró & Andrés & Cubierto\\
 Herramienta web sin instalación ni registro & Carolina, Andrés & Cubierto\\
 Mensajes claros, mapas simples y pocos controles & Diana & Parcial\\
-Versión móvil legible & Andrés, Diana & Parcial\\
 Qué pasa en su ruta y por qué hay una cámara & Diana & Parcial\\
 Exportar PNG y CSV & Carolina, Andrés & No cubierto\\
 Embeber vistas en un artículo & Andrés & No cubierto\\
@@ -300,7 +336,7 @@ El costo de esta decisión es que el antes queda en un solo año y no podemos sa
 
 \subsection{Zona con cámara y referencia}
 
-Contamos como zona con cámara los siniestros a 500 metros o menos de un sitio. Es una distancia que alcanza a recoger el frenado antes de la cámara y la aceleración después sin llegar a cubrir buena parte de la ciudad, y como cualquier valor es discutible lo dejamos como filtro entre 150 y 1.000 metros para que cada quien vea si la conclusión cambia.
+Contamos como zona con cámara los siniestros a 500 metros o menos de un sitio. Nos pareció una distancia suficiente para recoger lo que ocurre alrededor de la cámara sin cubrir buena parte de la ciudad, y como cualquier valor es discutible lo dejamos como filtro entre 150 y 1.000 metros para que cada quien vea si la conclusión cambia.
 
 Las 92 cámaras las agrupamos en 40 sitios porque varias comparten esquina con sentidos o calzadas distintas, y contarlas por separado repetiría los mismos siniestros en dos o tres cámaras vecinas. También hace más legible el mapa, donde el tamaño del círculo dice cuántas cámaras hay en un sitio sin tener que dibujar puntos superpuestos, y es la unidad que reconoce una persona cuando habla de la cámara de una esquina.
 
@@ -309,9 +345,9 @@ La referencia son las vías con velocidad medida que quedan más allá del radio
 
 \subsection{Velocidad}
 
-Describimos la velocidad con el percentil 85, es decir, la velocidad por debajo de la cual circula el 85\% de los vehículos. Es la medida que se usa en ingeniería de tránsito para describir la velocidad de operación de una vía y se puede leer junto al límite. Preferimos no usar el promedio porque mezcla la congestión con la circulación libre y puede esconder que una parte de los vehículos va muy rápido, ni la velocidad máxima porque un solo registro erróneo la cambia, y en los archivos hay mediciones de hasta 185 km/h.
+Describimos la velocidad con el percentil 85, es decir, la velocidad por debajo de la cual circula el 85\% de los vehículos. Escogimos esta medida porque permite leer junto al límite la velocidad a la que va la mayor parte del tráfico, y a nuestro juicio es preferible al promedio, que mezcla la congestión con la circulación libre y puede esconder que una parte de los vehículos va muy rápido, y a la velocidad máxima, que un solo registro erróneo puede cambiar, ya que en los archivos hay mediciones de hasta 185 km/h.
 
-Lo calculamos por mes, que es la misma unidad de los siniestros, y para comparar años dejamos solo los tramos que tienen datos en los cuatro, porque el número de tramos medidos cambia y un promedio podría subir o bajar solo por cuáles entraron. Además, un mes se muestra únicamente si al menos la mitad de esos tramos reportó.
+Lo calculamos por mes, que es la misma unidad de los siniestros, tomando por separado cada sentido de la vía con todos los días y horas y promediando después los dos sentidos, de manera que un sentido con más registros no pese más que el otro. Para comparar años dejamos solo los tramos que tienen datos en los cuatro, porque el número de tramos medidos cambia y un promedio podría subir o bajar solo por cuáles entraron. Además, un mes se muestra únicamente si al menos la mitad de esos tramos reportó.
 
 \subsection{Comparaciones y cautelas}
 
@@ -330,27 +366,33 @@ Todo lo anterior describe lo que pasó y no prueba causalidad, así que los text
 
 \section{How: los idioms}
 
-En esta sección explicamos con qué idioms respondimos cada tarea, cómo codificamos los datos y de qué forma se pueden manipular, y en cada caso decimos por qué lo usamos y en qué le sirve a quien mira el dashboard. Partimos de la acción y el objetivo de cada pregunta para escoger la forma, y cuando dos opciones servían preferimos la que usa posición o longitud sobre una escala común, porque son los canales con los que se comparan magnitudes con más precisión, y dejamos el color para separar categorías.
+En esta sección explicamos con qué idioms respondimos cada tarea, cómo codificamos los datos y de qué forma se pueden manipular, y en cada caso decimos por qué lo usamos y en qué le sirve a quien mira el dashboard. Partimos de la acción y el objetivo de cada pregunta para escoger la forma, y cuando dos opciones servían preferimos la que usa posición o longitud sobre una escala común, porque son los canales con los que se comparan magnitudes con más precisión \cite[sección 5.5]{munzner}, y dejamos el color para separar categorías.
 
 \subsection{Idioms para el lugar y el cambio}
 
-Para el lugar usamos un mapa con dos idioms que se turnan según el zoom, porque con 109.137 siniestros los puntos individuales se tapan entre sí y no dejan ver ningún patrón. Con poco zoom agrupamos los siniestros en celdas de densidad que van de amarillo a rojo, y al acercar aparecen los puntos coloreados por gravedad, con los sitios de cámara encima como círculos cuyo tamaño dice cuántas cámaras tienen. Esto le permite a Diana reconocer su barrio y su vía sin conocer códigos de sitios, y a Carolina ver dónde se concentran los siniestros antes de decidir en qué corredor mirar con más detalle. El mapa base es gris claro para que lo único que resalte sean los datos.
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+Para el lugar usamos un mapa con dos idioms que se turnan según el zoom, porque con 109.137 siniestros los puntos individuales se tapan entre sí y no dejan ver ningún patrón \cite[secciones 13.4 y 14.4]{munzner}. Con poco zoom agrupamos los siniestros en celdas de densidad que van de amarillo a rojo, y al acercar aparecen los puntos coloreados por gravedad, con los sitios de cámara encima como círculos cuyo tamaño dice cuántas cámaras tienen. Esto permite reconocer un barrio y una vía sin conocer códigos de sitios, y ver dónde se concentran los siniestros antes de decidir en qué corredor mirar con más detalle. El mapa base es gris claro para que lo único que resalte sean los datos.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_mapa}
+\captionof{figure}{Mapa de densidad con los sitios de cámara y su leyenda}
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[width=0.55\linewidth,height=0.4\textheight,keepaspectratio]{i_mapa}
-\caption{Mapa de densidad con los sitios de cámara y su leyenda}
-\end{figure}
-
-La pregunta de si bajó más donde hay cámara la respondemos con dos barras de cambio porcentual que parten de un mismo cero, una para la zona con cámara y otra para las vías sin cámara. Al principio teníamos barras de antes y después con una escala distinta para cada zona, de manera que las longitudes no se podían comparar y el resultado quedaba escondido en una frase. Con la escala común la comparación se hace a simple vista, debajo de cada barra quedan las cifras en siniestros por mes para quien necesite citarlas y la diferencia entre ambos cambios aparece escrita, que es justamente lo que Carolina lleva a una discusión sobre el programa.
-
-\begin{figure}[H]\centering
-\includegraphics[width=0.7\linewidth,height=0.2\textheight,keepaspectratio]{i_cambio}
-\caption{Barras de cambio con y sin cámara sobre una escala común}
-\end{figure}
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+La pregunta de si bajó más donde hay cámara la respondemos con dos barras de cambio porcentual que parten de un mismo cero, una para la zona con cámara y otra para las vías sin cámara. Al principio teníamos barras de antes y después con una escala distinta para cada zona, de manera que las longitudes no se podían comparar y el resultado quedaba escondido en una frase. Con la escala común la comparación se hace a simple vista, debajo de cada barra quedan las cifras en siniestros por mes para quien necesite citarlas y la diferencia entre ambos cambios aparece escrita, que es justamente la cifra que se necesita en una discusión sobre el programa.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_cambio}
+\captionof{figure}{Barras de cambio con y sin cámara sobre una escala común}
+\end{minipage}
+\par\medskip
 
 Junto a ese cambio dejamos los siniestros por año en barras verticales, porque son pocos periodos ordenados y la altura permite ver de inmediato la caída de 2020 y cuánto se recuperó después, lo que evita que alguien lea el cambio con y sin cámara como si no hubiera pasado nada más en la ciudad. Los colores separan el antes, la transición y el después y se repiten en el resto del dashboard, así que quien aprende a leerlos aquí no tiene que volver a hacerlo en otra vista. Para las víctimas usamos barras pareadas por condición, que comparan la distribución entre los dos periodos con la cifra al final de cada barra y el cambio porcentual alineado a la derecha, de modo que se puede recorrer la columna de porcentajes para encontrar qué grupo subió y cuál bajó.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth,height=0.26\textheight,keepaspectratio]{i_anual}\hfill
 \includegraphics[width=0.49\linewidth,height=0.26\textheight,keepaspectratio]{i_victimas}
 \caption{Siniestros por año y víctimas por condición}
@@ -358,57 +400,76 @@ Junto a ese cambio dejamos los siniestros por año en barras verticales, porque 
 
 \subsection{Idioms para el tiempo}
 
-Para saber cuándo cambia la tendencia usamos una línea mensual, porque el tiempo es ordenado y la pendiente deja ver subidas y bajadas que en barras separadas costaría seguir. La línea va acompañada del promedio de 2019 como referencia, de la marca de las multas y de una cinta junto al eje con la pandemia y la instalación, que le dan al lector el contexto sin tapar los datos. Debajo hay una franja con toda la serie que funciona como vista de conjunto, de modo que Andrés puede arrastrar sobre unos meses para acercarse y seguir sabiendo en qué parte de los cuatro años está parado.
+\par\medskip\noindent
+\begin{minipage}[t]{0.41\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_serie}
+\captionof{figure}{Serie mensual con referencia, periodos marcados y franja para acercar}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.56\linewidth}\vspace{0pt}\RaggedRight
+Para saber cuándo cambia la tendencia usamos una línea mensual, porque el tiempo es ordenado y la pendiente deja ver subidas y bajadas que en barras separadas costaría seguir. La línea va acompañada del promedio de 2019 como referencia, de la marca de las multas y de una cinta junto al eje con la pandemia y la instalación, que le dan al lector el contexto sin tapar los datos. Debajo hay una franja con toda la serie que funciona como vista de conjunto, de modo que se puede arrastrar sobre unos meses para acercarse sin perder de vista en qué parte de los cuatro años se está.
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[width=0.8\linewidth,height=0.28\textheight,keepaspectratio]{i_serie}
-\caption{Serie mensual con referencia, periodos marcados y franja para acercar}
-\end{figure}
+\par\medskip\noindent
+\begin{minipage}[t]{0.39\linewidth}\vspace{0pt}\RaggedRight
+Cuando lo que se quiere es comparar un año con otro usamos recuadros pequeños, uno por año, con la misma escala y con 2019 en gris detrás de cada uno. Preferimos esta forma a superponer las cuatro líneas en una sola gráfica, porque se cruzan y cuesta saber cuál es cuál, mientras que con los recuadros la comparación se hace por posición y cada año se lee contra la misma referencia, que es el último año antes de las cámaras.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.58\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_anios}
+\captionof{figure}{Un recuadro por año, con 2019 como referencia}
+\end{minipage}
+\par\medskip
 
-Cuando lo que se quiere es comparar un año con otro usamos recuadros pequeños, uno por año, con la misma escala y con 2019 en gris detrás de cada uno. Empezamos superponiendo las cuatro líneas en una sola gráfica, pero se cruzaban y había que seguirlas con el dedo para saber cuál era cuál, mientras que con los recuadros la comparación se hace por posición y cada año se lee contra la misma referencia, que es el último año antes de las cámaras.
-
-\begin{figure}[H]\centering
-\includegraphics[width=0.8\linewidth,height=0.22\textheight,keepaspectratio]{i_anios}
-\caption{Un recuadro por año, con 2019 como referencia}
-\end{figure}
-
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_indice}
+\captionof{figure}{Series indexadas a 2019 y área de diferencia}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
 Para comparar la evolución con y sin cámara las dos series se expresan como porcentaje de su propio nivel de 2019, porque sus volúmenes son tan distintos que en la misma escala una aplastaría a la otra. Como las dos líneas quedan muy cerca, debajo graficamos la resta en un área que cambia de color según quién está más alto, que es el dato derivado que de verdad interesa, y así nadie tiene que calcular a ojo la distancia entre dos líneas casi iguales. La instalación, la pandemia y las multas se marcan igual que en la serie para que la lectura sea la misma.
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[width=0.75\linewidth,height=0.32\textheight,keepaspectratio]{i_indice}
-\caption{Series indexadas a 2019 y área de diferencia}
-\end{figure}
-
-La velocidad del tráfico sigue la misma lógica, con las líneas del percentil 85 en km/h, que conservan el valor real y se pueden leer contra el límite del sitio, y debajo la diferencia entre los tramos con y sin cámara. La dejamos en gráficas aparte en lugar de ponerla sobre los siniestros con un doble eje, porque dos escalas en una misma gráfica sugieren relaciones que no existen. Para Diana esto responde a qué velocidad se circula en su ruta, y para Carolina muestra si el tráfico se hizo más lento donde se puso la cámara.
-
-\begin{figure}[H]\centering
-\includegraphics[width=0.75\linewidth,height=0.32\textheight,keepaspectratio]{i_velocidad}
-\caption{Velocidad P85 y diferencia entre tramos con y sin cámara}
-\end{figure}
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+La velocidad del tráfico sigue la misma lógica, con las líneas del percentil 85 en km/h, que conservan el valor real y se pueden leer contra el límite del sitio, y debajo la diferencia entre los tramos con y sin cámara. La dejamos en gráficas aparte en lugar de ponerla sobre los siniestros con un doble eje, porque preferimos que cada gráfica tenga una sola escala y no se lea una relación donde solo hay dos series superpuestas. Esto responde a qué velocidad se circula en una vía y muestra si el tráfico se hizo más lento donde se puso la cámara.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_velocidad}
+\captionof{figure}{Velocidad P85 y diferencia entre tramos con y sin cámara}
+\end{minipage}
+\par\medskip
 
 \subsection{Idioms para corredores y meses}
 
-Para encontrar el corredor que más mejora o empeora usamos una lista ordenada con barras divergentes centradas en la referencia, de manera que los extremos quedan arriba y abajo y el lado de la barra dice si el corredor tuvo menos o más casos que las vías sin cámara. Cada fila trae además una miniatura de su serie mensual con la instalación sombreada, que permite ver si el cambio fue sostenido o producto de unos pocos meses sin abrir el detalle, y los corredores con pocos siniestros se señalan para que Andrés no construya una noticia sobre un porcentaje inestable.
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_corredores}
+\captionof{figure}{Lista de corredores con barras divergentes y miniaturas}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+Para encontrar el corredor que más mejora o empeora usamos una lista ordenada con barras divergentes centradas en la referencia, de manera que los extremos quedan arriba y abajo y el lado de la barra dice si el corredor tuvo menos o más casos que las vías sin cámara. Cada fila trae además una miniatura de su serie mensual con la instalación sombreada, que permite ver si el cambio fue sostenido o producto de unos pocos meses sin abrir el detalle, y los corredores con pocos siniestros se señalan para que nadie saque una conclusión de un porcentaje inestable.
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[width=0.8\linewidth,height=0.34\textheight,keepaspectratio]{i_corredores}
-\caption{Lista de corredores con barras divergentes y miniaturas}
-\end{figure}
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+Al elegir un corredor se abre una tarjeta con las cifras de cada periodo, el cambio, la diferencia frente a las vías sin cámara y su serie con más tamaño. Cada número lleva su unidad escrita debajo, porque un valor suelto no dice qué se está contando. La relación entre velocidad y gravedad la mostramos en un gráfico de dispersión con un punto por corredor, que es el idiom que deja ver si dos variables se mueven juntas y cuáles corredores se salen del grupo, y queda plegado porque responde una pregunta secundaria.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_detalle}
+\captionof{figure}{Tarjeta de detalle de un corredor}
+\end{minipage}
+\par\medskip
 
-Al elegir un corredor se abre una tarjeta con las cifras de cada periodo, el cambio, la diferencia frente a las vías sin cámara y su serie con más tamaño. Cada número lleva su unidad escrita debajo, porque en una versión anterior un valor suelto no decía qué se estaba contando. La relación entre velocidad y gravedad la mostramos en un gráfico de dispersión con un punto por corredor, que es el idiom que deja ver si dos variables se mueven juntas y cuáles corredores se salen del grupo, y queda plegado porque responde una pregunta secundaria.
-
-\begin{figure}[H]\centering
-\includegraphics[width=0.75\linewidth,height=0.22\textheight,keepaspectratio]{i_detalle}
-\caption{Tarjeta de detalle de un corredor}
-\end{figure}
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.65\linewidth,height=0.25\textheight,keepaspectratio]{i_dispersion}
 \caption{Dispersión de velocidad y gravedad por corredor}
 \end{figure}
 
-La comparación de meses usa una barra por mes, que se pinta según el grupo al que pertenece, y una tabla debajo con el promedio mensual de cada grupo y el cambio entre ellos. Las barras sirven para elegir y para ver qué tan parecidos son los meses dentro de un grupo, y la tabla sirve para leer cifras exactas de siniestros, víctimas, cámaras instaladas y velocidad, que en una sola gráfica no cabrían sin mezclar unidades. Con esto Carolina puede armar su propio antes y después, por ejemplo dejando por fuera la pandemia, sin pedirle a nadie un cruce nuevo.
+La comparación de meses usa una barra por mes, que se pinta según el grupo al que pertenece, y una tabla debajo con el promedio mensual de cada grupo y el cambio entre ellos. Las barras sirven para elegir y para ver qué tan parecidos son los meses dentro de un grupo, y la tabla sirve para leer cifras exactas de siniestros, víctimas, cámaras instaladas y velocidad, que en una sola gráfica no cabrían sin mezclar unidades. Con esto se puede armar un antes y después propio, por ejemplo dejando por fuera la pandemia, sin pedirle a nadie un cruce nuevo.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.85\linewidth,height=0.38\textheight,keepaspectratio]{i_ab}
 \caption{Comparar meses, con las barras para elegir y la tabla de promedios}
 \end{figure}
@@ -417,7 +478,7 @@ La comparación de meses usa una barra por mes, que se pinta según el grupo al 
 
 La siguiente tabla resume cómo codificamos cada dato, y la intención fue que un mismo canal signifique lo mismo en todas las vistas para que lo aprendido en una sirva en las demás.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{3.6cm}P{4.4cm}L}
 \toprule
 \textbf{Dato} & \textbf{Marca y canal} & \textbf{Razón}\\
@@ -432,7 +493,7 @@ Cambio porcentual & Longitud desde un cero común & Es de los canales más preci
 Instalación y pandemia & Cinta junto al eje & Da contexto sin tapar los datos.\\
 \bottomrule
 \end{tabularx}
-\caption{Marcas y canales}
+\caption{Marcas y canales, escogidos según el orden de efectividad de Munzner \cite[sección 5.5]{munzner}}
 \end{table}
 
 El rojo y el amarillo vienen de la bandera de Bogotá, y el rojo señala lo observado, es decir, lo que ocurrió después y cerca de las cámaras, sin ser un juicio de bueno o malo. Reservamos ese rojo para los datos y las acciones principales y dejamos los controles seleccionados en tinta oscura, porque si todo lo activo fuera rojo se perdería la señal de qué es lo que se está comparando. En las escalas buscamos que lo comparable comparta eje, mientras que las miniaturas de los corredores tienen escala propia porque allí interesa la forma de la serie y su tamaño ya está en las cifras de la fila.
@@ -441,17 +502,17 @@ El rojo y el amarillo vienen de la bandera de Bogotá, y el rojo señala lo obse
 
 Los filtros salen de las preguntas y de los perfiles, y cada uno existe porque cambia la respuesta de alguna de ellas, de modo que no pusimos un control por cada columna disponible para no abrir combinaciones que dejan muy pocos siniestros.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{P{3.3cm}P{4.2cm}L}
 \toprule
 \textbf{Filtro} & \textbf{Opciones} & \textbf{Por qué lo incluimos}\\
 \midrule
-Corredor & Los 18 o toda la ciudad & Es la forma en que se habla de una vía y lo que Andrés y Diana buscan. Tiene búsqueda para no recorrer la lista.\\
-Sitio de cámara & Los 40 sitios & Carolina quiere el antes y después por cámara. Depende del corredor elegido para acortar las opciones.\\
+Corredor & Los 18 o toda la ciudad & Es la forma en que se habla de una vía y la unidad que más se busca. Tiene búsqueda para no recorrer la lista.\\
+Sitio de cámara & Los 40 sitios & Permite ver el antes y después por cámara. Depende del corredor elegido para acortar las opciones.\\
 Periodo & Todo, antes, 2020 y después & Permite aislar la transición y ver dónde ocurren los siniestros en cada momento.\\
 Gravedad & Todos, heridos, heridos o muertos y muertos & Un programa de cámaras se juzga por las muertes, pero los fatales son pocos, así que los niveles dejan pasar de lo más frecuente a lo más grave.\\
 Tipo de siniestro & Seis clases & La pregunta de tendencia habla de choques fatales y no de cualquier siniestro fatal.\\
-Actor involucrado & Once marcas & Sirve para mirar motos, peatones o embriaguez, y salió de los comentarios del paper prototype.\\
+Actor involucrado & Once marcas & Sirve para mirar motos, peatones o embriaguez,.\\
 Radio & 150 a 1.000 m & Deja probar el supuesto de qué es cerca.\\
 Excluir intersecciones ambiguas & Sí o no & Evita atribuir a un corredor lo que pudo ocurrir en el que lo cruza.\\
 Siniestros en el corredor & Casilla en el mapa & Responde la duda de si se toma toda la vía o solo el tramo de la cámara.\\
@@ -460,56 +521,158 @@ Siniestros en el corredor & Casilla en el mapa & Responde la duda de si se toma 
 \caption{Filtros y su razón}
 \end{table}
 
-Dejamos a la vista los cuatro primeros porque son los que usa cualquier perfil y escondimos el resto en ``Más filtros'', pensando en que Diana necesita pocos controles. Al abrir, la gravedad está en Todos y el radio en 500 metros para que lo primero que se ve sea el panorama completo, y unas etiquetas recuerdan el alcance activo, incluidos los filtros escondidos. Los selectores de corredor y de sitio tienen búsqueda, porque recorrer una lista de 40 sitios a ojo es lento, y si un filtro no cambia una vista no se muestra en ella, como el periodo en Comparar meses, donde los meses se eligen en la gráfica.
+Dejamos a la vista los cuatro primeros porque son los de uso más frecuente y escondimos el resto en ``Más filtros'', para que la primera pantalla tenga pocos controles. Al abrir, la gravedad está en Todos y el radio en 500 metros para que lo primero que se ve sea el panorama completo, y unas etiquetas recuerdan el alcance activo, incluidos los filtros escondidos. Los selectores de corredor y de sitio tienen búsqueda, porque recorrer una lista de 40 sitios a ojo es lento, y si un filtro no cambia una vista no se muestra en ella, como el periodo en Comparar meses, donde los meses se eligen en la gráfica.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{f_mas}\hfill
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{f_buscar}
 \caption{Filtros adicionales y búsqueda de corredor}
 \end{figure}
 
-La selección se puede hacer desde el menú o con un clic en el mapa, porque unas personas conocen el nombre de la vía y otras reconocen el lugar, y se conserva al cambiar de pestaña para no tener que repetirla. Al elegir un sitio el mapa se acerca, dibuja el radio y rotula la cámara, y las cifras, las series y la velocidad pasan a referirse a ese lugar, que es lo que Carolina pide cuando habla del antes y después por cámara. La casilla del corredor amplía los puntos a toda la vía sin cambiar la comparación con y sin cámara, y respondió una duda que nos plantearon en el paper prototype.
+La selección se puede hacer desde el menú o con un clic en el mapa, porque unas personas conocen el nombre de la vía y otras reconocen el lugar, y se conserva al cambiar de pestaña para no tener que repetirla. Al elegir un sitio el mapa se acerca, dibuja el radio y rotula la cámara, y las cifras, las series y la velocidad pasan a referirse a ese lugar, de modo que el antes y después se puede leer cámara por cámara. La casilla del corredor amplía los puntos a toda la vía sin cambiar la comparación con y sin cámara.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{f_sitio}\hfill
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{f_corredor}
 \caption{Un sitio seleccionado y los siniestros de todo el corredor}
 \end{figure}
 
-La información adicional se entrega cuando se pide, con tooltips que muestran solo datos y con un icono de ayuda junto a cada título que explica cómo leer la gráfica. Antes esas explicaciones estaban escritas a la vista y el dashboard parecía una guía, así que al moverlas quien ya sabe leer una gráfica no tiene que pasar por ellas y quien la ve por primera vez las encuentra al lado, también desde el celular con un toque.
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+La información adicional se entrega cuando se pide, con tooltips que muestran solo datos y con un icono de ayuda junto a cada título que explica cómo leer la gráfica. Las explicaciones no van escritas a la vista para que el dashboard no parezca una guía, de manera que quien ya sabe leer una gráfica no tiene que pasar por ellas y quien la ve por primera vez las encuentra al lado.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{f_ayuda}
+\captionof{figure}{Ayuda de lectura abierta sobre la gráfica}
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[width=0.7\linewidth,height=0.3\textheight,keepaspectratio]{f_ayuda}
-\caption{Ayuda de lectura abierta sobre la gráfica}
-\end{figure}
-
-\subsection{Facetas, orientación y distintas pantallas}
+\subsection{Facetas y orientación}
 
 Separamos el dashboard en cuatro vistas porque cada una responde un tipo de pregunta y juntas no cabían sin competir, de forma que Mapa y cambios da el panorama, Evolución se ocupa del cuándo, Corredores del cuál y Comparar meses deja armar una comparación propia. El orden de las pestañas va de lo general a lo particular y sus nombres dicen qué se va a encontrar, porque con nombres como ``Panorama'' o ``Serie'' no era claro. El mapa acompaña las vistas en las que el lugar aporta y queda siempre a la izquierda para no desorientar.
 
-Todo sigue el principio ``overview first, zoom and filter, then details on demand'', ya que cada vista abre con todo el conjunto, el mapa y la serie permiten acercarse, los filtros reducen lo que se ve y los tooltips, las ayudas y la tarjeta de corredor agregan detalle cuando se pide. Así Diana puede quedarse en la primera lectura y Carolina llegar hasta el detalle sin que una le estorbe a la otra.
+Todo sigue el principio ``overview first, zoom and filter, then details on demand'' \cite[sección 6.7]{munzner}, ya que cada vista abre con todo el conjunto, el mapa y la serie permiten acercarse, los filtros reducen lo que se ve y los tooltips, las ayudas y la tarjeta de corredor agregan detalle cuando se pide. Así se puede quedar en la primera lectura o llegar hasta el detalle, sin que una de las dos formas de uso le estorbe a la otra.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{ex_zoom}\hfill
 \includegraphics[width=0.49\linewidth,height=0.3\textheight,keepaspectratio]{ex_semanas}
 \caption{Zoom en el mapa y en la serie}
 \end{figure}
 
-Para quien llega por primera vez hay una pantalla de inicio con la historia, un recorrido sobre cómo usar el dashboard, la exploración libre y las preguntas. Separamos el recorrido de la historia porque uno enseña a usar los controles señalándolos uno por uno y la otra cuenta qué se encontró. Además lo construimos como una aplicación web que calcula todo en el navegador, porque Carolina no puede instalar programas en su red y Andrés no programa, y en pantallas angostas los paneles se apilan y los filtros pasan a un panel inferior, pensando en que Diana entra casi siempre desde el celular.
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{f_recorrido}
+\captionof{figure}{Recorrido guiado sobre los controles}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+Para quien llega por primera vez hay una pantalla de inicio con la historia, un recorrido sobre cómo usar el dashboard, la exploración libre y las preguntas. Separamos el recorrido de la historia porque uno enseña a usar los controles señalándolos uno por uno y la otra cuenta qué se encontró. Además lo construimos como una aplicación web que calcula todo en el navegador, porque en una red institucional no siempre se pueden instalar programas y no se puede suponer que quien consulta sepa programar.
+\end{minipage}
+\par\medskip
 
-\begin{figure}[H]\centering
-\includegraphics[height=0.28\textheight]{f_recorrido}\hfill
-\includegraphics[height=0.28\textheight]{movil_filtros}
-\caption{Recorrido guiado y filtros en el celular}
-\end{figure}
-\FloatBarrier
+\section{Lo que encontramos}
+
+Estas son las conclusiones más importantes a las que llegamos usando el dashboard. En cada una contamos qué vimos, con qué gráfica lo vimos y por qué esa gráfica nos permitió verlo. Todas describen lo que pasó entre 2019 y 2022, pero ninguna demuestra que las cámaras hayan causado esos cambios.
+
+\subsection{Cuánto cambió y cuándo}
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{Los siniestros bajaron cerca de las cámaras, pero bajaron más donde no había cámaras.} Al comparar 2019 con 2021 y 2022, los siniestros por mes cayeron 17,9\% a menos de 500 metros de una cámara y 27,5\% en las vías sin cámara. Lo vimos con las dos barras de cambio de la vista Mapa y cambios. Como ambas empiezan en el mismo cero, basta con mirar cuál es más larga, y así se nota enseguida que mirar solo la zona con cámara haría pensar que todo mejoró gracias a ellas, cuando en el resto la caída fue mayor.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_cambio}
+\captionof{figure}{Cambio con y sin cámara}
+\end{minipage}
+\par\medskip
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{h3}
+\captionof{figure}{La comparación con la gravedad Muertos}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{Los siniestros con muertos subieron cerca de las cámaras.} Al escoger la gravedad Muertos, la zona con cámara pasa de 5,8 a 7,3 siniestros por mes, un aumento de 25\%, mientras que las vías sin cámara bajan 3,3\%. Llegamos a esto con las mismas barras de cambio, cambiando solo el filtro de gravedad, lo que permite ver que la historia no es igual para los casos más graves. Hay que leerlo con cuidado, porque son 297 siniestros en cuatro años y con tan pocos un porcentaje cambia mucho.
+\end{minipage}
+\par\medskip
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.39\linewidth}\vspace{0pt}\RaggedRight
+\textbf{El año 2020 rompe la comparación.} Los siniestros con muertos fueron 493 en 2019, 369 en 2020, 462 en 2021 y 538 en 2022, y al mirar todos los siniestros el mes más bajo de los cuatro años es abril de 2020. Las cifras por año salen de las barras anuales y el momento exacto lo vimos en la línea de tiempo, porque muestra mes a mes cuándo empieza la caída y deja ver en el mismo lugar la pandemia, la instalación y el inicio de las multas. Como las tres cosas ocurren casi al tiempo, no se puede decir cuál de ellas explica la bajada.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.58\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_serie}
+\captionof{figure}{Siniestros por mes y los momentos clave}
+\end{minipage}
+\par\medskip
+
+\subsection{A quiénes y en dónde}
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_victimas}
+\captionof{figure}{Víctimas por condición}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{No todas las personas se vieron afectadas igual.} Contando heridos y muertos cerca de las cámaras, las víctimas peatonas bajaron 27,5\%, mientras que las de motociclistas subieron 22,3\% y las de ciclistas 17,7\%. Si se miran solo las víctimas fatales, los peatones bajan 15,7\%, los motociclistas suben 68,4\% y los ciclistas 55,6\%. Esto salió de las barras por condición, que ponen juntas las cifras de antes y de después de cada grupo y dejan ver de un vistazo quién sube y quién baja, algo que el total de siniestros escondía por completo.
+\end{minipage}
+\par\medskip
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{Cada corredor cuenta una historia distinta.} Hay vías que mejoraron mucho más que las vías sin cámara y otras que mejoraron menos o empeoraron. Con todos los siniestros, la Av. Carrera 9 es la que mejor sale, y al mirar solo heridos y muertos el contraste va desde ella, con una diferencia de $-34{,}2$\% frente a las vías sin cámara, hasta la Calle 63 Sur, con una de +53,6\%. Lo vimos en la lista de corredores, porque al estar ordenada deja los extremos arriba y abajo, y la miniatura de cada fila muestra si el cambio se mantuvo o fue cosa de unos pocos meses.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_corredores}
+\captionof{figure}{Lista de corredores ordenada}
+\end{minipage}
+\par\medskip
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{ex_boyaca}
+\captionof{figure}{Mapa con la Av. Boyacá y la gravedad Muertos}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{Los lugares con más muertes se parecen antes y después.} La Av. Boyacá y la Av. Ciudad de Cali están entre los tres corredores con más siniestros con muertos tanto en 2019 como en 2021 y 2022, mientras que la Av. Carrera 10 sale de ese grupo y entra la Av. NQS. El mapa permite ver dónde se concentran los puntos y, al cambiar el filtro de periodo, comparar antes y después sin que el mapa se mueva, mientras que al elegir un corredor se resalta su recorrido y se cuentan sus siniestros. El conteo que ordena los tres primeros corredores lo reúne la historia guiada.
+\end{minipage}
+\par\medskip
+
+\subsection{Velocidad}
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{La velocidad bajó casi por igual con y sin cámara.} En los dos grupos de tramos la velocidad terminó cerca de 5 km/h por debajo de la de 2019, y la distancia entre ellos nunca pasó de unos 3 km/h. Lo vimos con la gráfica que resta una serie de la otra, ya que en las dos líneas originales parecía que todo iba en paralelo pero no se podía medir, y en la resta se ve que unas veces el resultado queda a favor de un grupo y otras del otro.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_velocidad}
+\captionof{figure}{Velocidad y diferencia entre tramos}
+\end{minipage}
+\par\medskip
+
+\par\medskip\noindent
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{i_dispersion}
+\captionof{figure}{Velocidad y gravedad por corredor}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
+\textbf{Las vías más rápidas no fueron las de siniestros más graves.} Al comparar 13 corredores, los más rápidos tendieron incluso a tener una proporción algo menor de siniestros con muertos, aunque la relación es débil y con tan pocas vías no se puede afirmar. Lo vimos en el gráfico de puntos, donde cada corredor es un punto y, si la velocidad explicara la gravedad, los puntos tendrían que subir hacia la derecha, cosa que no ocurre.
+\end{minipage}
+\par\medskip
+
 \section{Wireframes}
 
 
+\par\medskip\noindent
+\begin{minipage}[t]{0.61\linewidth}\vspace{0pt}\RaggedRight
 Nuestros primeros wireframes fueron interactivos y de baja fidelidad visual, con aspecto de boceto, pero usaban la red vial de Bogotá y conteos reales y se podían recorrer. Todas las pantallas compartían una retícula, con el mapa a la izquierda y el panel a la derecha, y se organizaban en diez pasos ligados a las tareas, con un modo de exploración libre y la opción de imprimirlos.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.36\linewidth}\vspace{0pt}\centering
+\includegraphics[width=\linewidth]{w_ficha}
+\captionof{figure}{Wireframe de la ficha de la Av. Boyacá}
+\end{minipage}
+\par\medskip
 
-\figura[0.8]{w_ficha}{Wireframe de la ficha de la Av. Boyacá}
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{w_comp}\hfill
 \includegraphics[width=0.49\linewidth]{w_guia}
 \caption{Comparación de dos meses y pantalla de guía}
@@ -517,7 +680,7 @@ Nuestros primeros wireframes fueron interactivos y de baja fidelidad visual, con
 
 En esta etapa revisamos la interacción con los criterios de Munzner, y de allí salieron reglas que mantenemos, como que seleccionar debe dejar un estado que se conserva, que un filtro debe cambiar lo que se muestra y que las dos cosas que se comparan deben verse al mismo tiempo. Antes de esa revisión varias transiciones de los wireframes no respetaban lo que el usuario había hecho en el paso anterior, por ejemplo al devolver un mes elegido a su valor inicial, y confundían la navegación de la guía con la manipulación de los datos. Separar ambas cosas fue lo que permitió después tener una historia guiada y una exploración libre sobre el mismo dashboard.
 
-\begin{table}[H]\centering\small
+\begin{table}[!htbp]\centering\small
 \begin{tabularx}{\linewidth}{LL}
 \toprule
 \textbf{Wireframes} & \textbf{Dashboard actual}\\
@@ -536,26 +699,25 @@ Cifras escritas a mano & Cifras calculadas con los datos.\\
 
 \pendiente{Agregar otros wireframes del equipo, si los hay.}
 
-\clearpage
 \section{Mockups}
 
 El mockup con el que probamos la interacción fue un paper prototype, y lo pensamos como una versión en papel de lo que queríamos construir. Las piezas las movíamos nosotros, de modo que quien probaba decía o señalaba qué haría y respondíamos cambiando la pieza como lo haría después la aplicación. En esta sección lo ponemos al lado de la versión final para que se vea qué se mantuvo, qué cambió y por qué.
 
 \subsection{El paper prototype frente al dashboard}
 
-El prototipo está compuesto por seis hojas A4, en las que las dos primeras son bases de montaje, la tercera trae los controles para recortar, la cuarta y la quinta las piezas que cambian al seleccionar o filtrar y la sexta las tarjetas de los meses con sus resultados, junto con una guía que nos indicaba qué pieza poner en cada momento. Lo limitamos a un caso, la Av. Boyacá, con siniestros fatales de 2018 a 2022, porque en papel cada combinación de filtros es una pieza más y lo que queríamos probar era el recorrido de seleccionar, filtrar y comparar, no la cantidad de opciones.
+El prototipo está compuesto por seis hojas carta, en las que las dos primeras son bases de montaje, la tercera trae los controles para recortar, la cuarta y la quinta las piezas que cambian al seleccionar o filtrar y la sexta las tarjetas de los meses con sus resultados, junto con una guía que nos indicaba qué pieza poner en cada momento. Lo limitamos a un caso, la Av. Boyacá, con siniestros fatales de 2018 a 2022, porque en papel cada combinación de filtros es una pieza más y lo que queríamos probar era el recorrido de seleccionar, filtrar y comparar, no la cantidad de opciones.
 
 En las siguientes fotos se ve la prueba en clase, con la base montada, las piezas de la selección de la Av. Boyacá superpuestas y alrededor las tiras de pestañas, periodos, meses y resultados que íbamos cambiando a medida que la persona avanzaba. Trabajar así nos permitió probar la secuencia completa sin haber programado nada y notar en el momento qué respuesta no teníamos prevista.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[height=7.6cm]{clase1}\hfill
 \includegraphics[angle=90,height=7.6cm]{clase2}
 \caption{Prueba del paper prototype en clase}
 \end{figure}
 
-La primera base ya tenía la estructura que conservamos, con las vistas arriba, los filtros debajo, el mapa a la izquierda y el análisis a la derecha. La ficha mostraba los siniestros por año y dos barras de antes y después, y aquí está el cambio más importante, porque en papel no había ninguna referencia y solo se podía decir si la cifra había subido o bajado. En la versión final las barras muestran el cambio porcentual de la zona con cámara junto al de las vías sin cámara, así que la pregunta pasa de ``bajó o no'' a ``bajó más o menos que donde no hay cámara''. También crecieron los filtros, que pasaron de corredor y periodo a incluir sitio, gravedad y ``Más filtros'', como nos pidieron en los comentarios.
+La primera base ya tenía la estructura que conservamos, con las vistas arriba, los filtros debajo, el mapa a la izquierda y el análisis a la derecha. La ficha mostraba los siniestros por año y dos barras de antes y después, y aquí está el cambio más importante, porque en papel no había ninguna referencia y solo se podía decir si la cifra había subido o bajado. En la versión final las barras muestran el cambio porcentual de la zona con cámara junto al de las vías sin cámara, así que la pregunta pasa de ``bajó o no'' a ``bajó más o menos que donde no hay cámara''. También crecieron los filtros, que pasaron de corredor y periodo a incluir sitio, gravedad y ``Más filtros''.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{paper-1}\hfill
 \includegraphics[width=0.49\linewidth]{it3}
 \caption{Base de montaje del mapa y la ficha, y la vista Mapa y cambios}
@@ -563,7 +725,7 @@ La primera base ya tenía la estructura que conservamos, con las vistas arriba, 
 
 Al elegir la Av. Boyacá se reemplazaban el mapa y la ficha por las piezas de la hoja 4, con el corredor en rojo. Con eso probamos que la selección se entendiera como un estado que se conserva al cambiar de vista, y en el dashboard se mantiene igual, con el corredor resaltado, las demás cámaras atenuadas y un botón para quitar la selección en el mismo mapa. Lo que cambió es el mapa, que pasó de líneas sin contexto a un mapa base gris, y los siniestros, que ahora se ven como densidad o como puntos según el zoom.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{paper-4}\hfill
 \includegraphics[width=0.49\linewidth]{ex_boyaca}
 \caption{Selección de la Av. Boyacá en papel y en el dashboard}
@@ -571,15 +733,15 @@ Al elegir la Av. Boyacá se reemplazaban el mapa y la ficha por las piezas de la
 
 La serie en papel mostraba 60 meses de un corredor con una escala fija de 0 a 8, y los botones de antes y después la cambiaban por las piezas de la hoja 5. Con tan pocos siniestros fatales por mes la línea era puro zigzag y no había contra qué leerla, por lo que en la versión final la serie abre con todos los siniestros, tiene el promedio de 2019 como referencia, marca la instalación, la pandemia y las multas y deja acercar un periodo arrastrando, en lugar de depender de tres estados fijos.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{paper-5}\hfill
 \includegraphics[width=0.49\linewidth]{ex_semanas}
 \caption{Respuestas al filtro de periodo en papel y serie con zoom en el dashboard}
 \end{figure}
 
-La comparación A/B permitía elegir entre tres meses (noviembre de 2019, 2021 y 2022), mover las marcas sobre la serie y superponer las tarjetas con Bogotá y la Av. Boyacá. De esa prueba salió que la comparación necesitaba su propia pantalla y que un solo mes tiene demasiado ruido, así que ahora es la pestaña Comparar meses, sin mapa, donde cada lado es un grupo de meses que se elige con clic o arrastre y se compara como promedio mensual, con filas para siniestros, víctimas, cámaras instaladas y velocidad.
+La comparación A/B permitía elegir entre tres meses (noviembre de 2019, 2021 y 2022), mover las marcas sobre la serie y superponer las tarjetas con Bogotá y la Av. Boyacá. En la versión final la comparación tiene su propia pantalla y no depende de un solo mes, que tiene demasiado ruido, de modo que es la pestaña Comparar meses, sin mapa, donde cada lado es un grupo de meses que se elige con clic o arrastre y se compara como promedio mensual, con filas para siniestros, víctimas, cámaras instaladas y velocidad.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{paper-2}\hfill
 \includegraphics[width=0.49\linewidth]{v_ab}
 \caption{Comparación A/B en papel y vista Comparar meses}
@@ -587,7 +749,7 @@ La comparación A/B permitía elegir entre tres meses (noviembre de 2019, 2021 y
 
 Las piezas recortables mostraban además lo que esperábamos de la interacción, como la tarjeta que aparecía al pasar por un corredor con sus 15 cámaras y 168 siniestros fatales. Esa tarjeta decía ``Clic para seleccionar'', y en la versión final los tooltips dan solo datos porque una instrucción dentro de ellos confundía. Los marcadores A en azul y B en rojo pasaron a gris y rojo, para que el color signifique lo mismo que en el resto del dashboard.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{paper-3}\hfill
 \includegraphics[width=0.49\linewidth]{paper-6}
 \caption{Controles para recortar y tarjetas de los meses}
@@ -595,42 +757,41 @@ Las piezas recortables mostraban además lo que esperábamos de la interacción,
 
 \subsection{La versión final}
 
-Además de lo que ya estaba en el papel, el dashboard sumó una pantalla de entrada, que respondió a la sugerencia de un tutorial y muestra la serie real de la ciudad, cuatro cifras y los caminos para empezar, con las preguntas en una ventana superpuesta desde la que cada una lleva a la vista que la responde. Las otras dos cosas que no existían en papel son la vista de Corredores, que permite encontrar el que más mejora o empeora sin probarlos uno por uno, y la velocidad del tráfico, que entró a partir de la duda que quedó en los comentarios sobre si incluirla. Ambas responden preguntas secundarias, así que quedaron en vistas y secciones a las que se llega después del panorama.
+Además de lo que ya estaba en el papel, el dashboard sumó una pantalla de entrada, que muestra la serie real de la ciudad, cuatro cifras y los caminos para empezar, con las preguntas en una ventana superpuesta desde la que cada una lleva a la vista que la responde. Las otras dos cosas que no existían en papel son la vista de Corredores, que permite encontrar el que más mejora o empeora sin probarlos uno por uno, y la velocidad del tráfico, que permite ver si el tráfico cambió donde se puso la cámara. Ambas responden preguntas secundarias, así que quedaron en vistas y secciones a las que se llega después del panorama.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{inicio}\hfill
 \includegraphics[width=0.49\linewidth]{preguntas}
 \caption{Pantalla de inicio y ventana de preguntas}
 \end{figure}
 
-También pensamos la versión para celular, donde los filtros se agrupan en un botón. Los momentos por los que pasó la vista principal antes de llegar a esta se muestran en la última sección, junto con la evolución de las demás vistas.
+Los momentos por los que pasó la vista principal antes de llegar a esta se muestran en la última sección, junto con la evolución de las demás vistas.
 
-\figura[0.3]{movil}{Vista en un celular}
-\FloatBarrier
 \section{Validaciones}
 
+A principios de noviembre probamos el paper prototype descrito en la sección anterior, y a partir de la prueba pudimos sacar las recomendaciones que aparecen en la tabla, unas de otros grupos y otras anotadas por nuestro equipo mientras veíamos a las personas usarlo. Fueron útiles sobre todo porque apuntaban a cosas que nosotros no veíamos por conocer ya los datos, como la duda sobre si se tomaba toda la vía o un tramo, que nos mostró que el alcance de lo que se cuenta tenía que estar escrito y poder cambiarse.
 
-A principios de noviembre probamos el paper prototype descrito en la sección anterior y recogimos comentarios de otros grupos y notas del equipo, que respondimos como se muestra en la tabla. Los comentarios fueron útiles sobre todo porque apuntaban a cosas que nosotros no veíamos por conocer ya los datos, como la duda sobre si se tomaba toda la vía o un tramo, que nos mostró que el alcance de lo que se cuenta tenía que estar escrito y poder cambiarse. En dos casos hicimos un ajuste distinto al que nos pidieron, y la razón queda en la misma tabla.
-
-\begin{table}[H]\centering\small
-\begin{tabularx}{\linewidth}{P{5.4cm}Ll}
+\begin{table}[!htbp]\centering\small
+\begin{tabularx}{\linewidth}{P{5.6cm}P{1.8cm}Ll}
 \toprule
-\textbf{Comentario} & \textbf{Qué hicimos} & \textbf{Estado}\\
+\textbf{Recomendación} & \textbf{Origen} & \textbf{Qué hicimos} & \textbf{Estado}\\
 \midrule
-Agregar filtros por tipo de siniestro, no solo fatales & Filtros de gravedad, tipo y actor. & Atendido\\
-¿Se toma toda la vía o solo el tramo de la cámara? & Selector de sitio, radio y casilla para ver los siniestros del corredor. & Atendido\\
-No dejar el mapa siempre fijo & Botón para ocultarlo. & Atendido\\
-Pasar la comparación A/B a otra pantalla (grupo 2) & Pestaña propia, Comparar meses. & Atendido\\
-Tutorial o pantalla de entrada (grupo 3) & Pantalla de inicio, recorrido e historia. & Atendido\\
-Hover sobre la serie, por meses o días & Tooltips en la serie, con días solo al acercar. & Con ajuste\\
-¿Incluir velocidad? & Gráfica aparte, para no usar un doble eje. & Con ajuste\\
-Pintar varias líneas a la vez, antes y después & Años superpuestos y con y sin cámara. & Atendido\\
-Conteo de cámaras y siniestros en la comparación & Filas de la tabla de Comparar meses. & Atendido\\
-Quitar el mapa en ciertas circunstancias & Comparar meses no muestra mapa. & Atendido\\
+Agregar filtros por tipo de siniestro, para dar más agregado a la información, y no solo mostrar accidentes en general & Otros grupos y equipo & Filtros de gravedad, tipo de siniestro y actor involucrado. & Atendido\\
+Aclarar si se toma toda la vía o solo el tramo que detecta la cámara & Otros grupos & Selector de sitio, radio y casilla para ver los siniestros de todo el corredor. & Atendido\\
+No dejar el mapa siempre fijo & Otros grupos & Botón para ocultar y volver a mostrar el mapa. & Atendido\\
+Cambiar el layout de la comparación A/B del mapa y ponerla en otra pantalla & Grupo 2 & Pestaña propia, Comparar meses. & Atendido\\
+Agregar un tutorial o una pantalla de entrada que muestre qué se debe pulsar & Grupo 3 & Pantalla de inicio, recorrido guiado e historia. & Atendido\\
+Mostrar información al pasar sobre la serie, por meses o por días cuando la temporalidad es menor & Equipo & Tooltips en la serie, con semanas y días solo al acercar. & Con ajuste\\
+Considerar incluir la velocidad & Equipo & Sección de velocidad en gráficas aparte, para no usar un doble eje. & Con ajuste\\
+Mostrar ambas gráficas y quitar el mapa en ciertas circunstancias & Equipo & Opción de ocultar el mapa y comparación de meses sin mapa. & Atendido\\
+Pintar varias líneas a la vez en la serie, como antes y después & Equipo & Años superpuestos y series con y sin cámara. & Atendido\\
+Incluir el conteo de cámaras y de siniestros en la comparación & Equipo & Filas de la tabla de Comparar meses. & Atendido\\
 \bottomrule
 \end{tabularx}
-\caption{Comentarios del paper prototype y respuesta}
+\caption{Recomendaciones obtenidas a partir del paper prototype}
 \end{table}
+
+En dos casos hicimos un ajuste distinto a lo que se sugería, porque los días solo tienen sentido al acercar un periodo corto y porque poner la velocidad sobre los siniestros habría obligado a usar dos escalas en la misma gráfica.
 
 Falta sumar a esta prueba las demás validaciones que hicimos, con quiénes participaron, qué tareas se les pidieron y qué cambio salió de cada hallazgo, para que se pueda seguir la relación entre lo que observamos y lo que decidimos.
 
@@ -640,48 +801,51 @@ Falta sumar a esta prueba las demás validaciones que hicimos, con quiénes part
 
 El dashboard tiene cuatro vistas y varios filtros que se combinan, y eso sirve para quien ya sabe qué buscar, pero no para quien llega por primera vez y quiere saber si las cámaras sirvieron. La respuesta que podemos dar además no cabe en una cifra, porque depende de con qué se compare, de qué gravedad se mire y de cómo se lea 2020, así que necesitábamos una forma de contar primero esas condiciones y solo después dejar que cada persona explorara.
 
-Segel y Heer describen la narración con visualizaciones como un punto entre dos extremos, uno en el que el autor lleva al lector paso a paso y otro en el que el lector decide qué mirar, y proponen estructuras que mezclan los dos, de las cuales comparamos tres antes de escoger.
+En el curso se nos propusieron cuatro estructuras para narrar con visualizaciones, que son la pirámide invertida, el reloj de arena, el diamante y la copa de martini, y las comparamos antes de escoger según el orden en que cada una entrega la información y el espacio que le deja a quien lee.
 
-\begin{table}[H]\centering\small
-\begin{tabularx}{\linewidth}{P{3.6cm}LL}
+\begin{table}[!htbp]\centering\small
+\begin{tabularx}{\linewidth}{P{2.8cm}LL}
 \toprule
-\textbf{Estructura} & \textbf{Qué ofrece} & \textbf{Por qué no bastaba sola o por qué se eligió}\\
+\textbf{Estructura} & \textbf{Cómo organiza el relato} & \textbf{Por qué se descartó o se eligió}\\
 \midrule
-Copa de martini & Un tramo guiado y después exploración abierta. & Fue la elegida, porque primero da contexto y luego libertad.\\
-Presentación interactiva & Diapositivas con interacción dentro de cada una. & Mantiene al lector dentro del guion y limita a quien quiere analizar.\\
-De lo general a lo particular (drill-down) & Una vista general desde la que el lector elige. & No garantiza que se vean las advertencias antes de sacar conclusiones.\\
+Pirámide invertida & Primero la información crucial y general, después la adicional y al final la menos importante. & Entregaría la conclusión antes de las advertencias que cambian cómo se lee.\\
+Reloj de arena & Abre el panorama, se acerca a un detalle y vuelve a abrir. & Se parece a nuestro recorrido, pero termina en la mirada del autor y no deja explorar.\\
+Diamante & Parte de una anécdota, expone la idea central, el detalle y el contexto, y regresa a la anécdota. & No tenemos una historia particular que abra y cierre el relato, porque trabajamos con datos agregados.\\
+Copa de martini & Una introducción, un recorrido guiado por el autor y una exploración abierta. & Fue la elegida, porque primero da contexto y después libertad.\\
 \bottomrule
 \end{tabularx}
 \caption{Estructuras consideradas}
 \end{table}
 
-La copa de martini era la mejor opción para nosotros porque pone los dos momentos en el orden que necesitábamos. El tallo es un recorrido angosto en el que fijamos la vista, los filtros y el texto, de modo que todos ven la referencia sin cámara y la advertencia sobre 2020 antes de sacar una conclusión, y la copa se abre cuando esa base ya está puesta. Una presentación interactiva habría mantenido al lector dentro del guion hasta el final, y Carolina, que quiere armar su propio antes y después, se habría quedado sin hacerlo. Un recorrido de lo general a lo particular tiene el problema contrario, porque deja elegir desde el principio y con tantos filtros es fácil terminar en la combinación que confirma lo que uno ya pensaba, sin pasar por las advertencias.
+La copa de martini era la mejor opción para nosotros porque pone los dos momentos en el orden que necesitábamos. La usamos en su versión que va de un recorrido guiado por el autor a una exploración guiada por el usuario \cite{segel}, en la que la pantalla de inicio funciona como introducción y el tallo es un recorrido angosto donde fijamos la vista, los filtros y el texto, de modo que todos ven la referencia sin cámara y la advertencia sobre 2020 antes de sacar una conclusión, y la copa se abre cuando esa base ya está puesta.
 
-También la preferimos por la forma en que se reparten los perfiles. Diana entra casi siempre desde el celular, desde un enlace, y tiene poca experiencia leyendo datos, por lo que necesita un hilo que le diga qué está viendo en cada paso. Andrés busca el corredor que empeoró, y el tallo lo lleva hasta allí pasando por el contexto que su artículo necesita, mientras que Carolina puede recorrerlo en poco tiempo o saltarlo e ir directo a los filtros, así que una sola estructura les sirve a los tres sin hacer una versión para cada uno. La idea de una secuencia guiada ya estaba en los wireframes por pasos, y la copa de martini nos dio la forma de cerrarla con libertad en lugar de terminar en el último paso.
+Las otras tres tenían en nuestro caso un problema de orden o de cierre. Con la pirámide invertida habríamos empezado diciendo que cerca de las cámaras no bajó más que en las vías sin cámara, una frase que sin la referencia y sin la pandemia se presta para entender que las cámaras no sirven. El reloj de arena nos permitía pasar de la ciudad a los corredores y volver a la conclusión, pero quien quisiera armar su propio antes y después se habría quedado sin hacerlo. El diamante habría exigido partir de un caso concreto, y escoger un siniestro o una esquina como hilo habría hecho pesar más una experiencia que la comparación entre zonas.
 
-La historia quedó en nueve pasos guiados y un décimo de exploración libre. Se inspira en las preguntas sin repetirlas, y el orden va de lo que el lector necesita saber primero a lo que puede concluir. Cada paso fija una sola idea y mueve el dashboard a la vista que la muestra, en lugar de usar diapositivas aparte, porque así el lector aprende dónde está cada cosa mientras sigue el relato y cuando la historia termina ya sabe volver a ella.
+También la preferimos porque el público del dashboard llega con distintos niveles de experiencia. Quien llega desde un enlace y tiene poca experiencia leyendo datos necesita un hilo que le diga qué está viendo en cada paso. Quien busca el corredor que empeoró llega hasta él pasando por el contexto que necesita para explicarlo, mientras que quien ya conoce el tema puede recorrer los pasos en poco tiempo o saltarlos e ir directo a los filtros, así que una sola estructura sirve sin hacer una versión para cada público. La idea de una secuencia guiada ya estaba en los wireframes por pasos, y la copa de martini nos dio la forma de cerrarla con libertad en lugar de terminar en el último paso.
 
-\begin{table}[H]\centering\small
-\begin{tabularx}{\linewidth}{cP{4.8cm}L}
+La historia quedó en nueve pasos guiados y un décimo de exploración libre. Se inspira en las preguntas sin repetirlas, y el orden va de lo que el lector necesita saber primero a lo que puede concluir. Lo organizamos como un inicio que presenta las cámaras y la advertencia sobre 2020, un nudo en el que se enfrentan las comparaciones desde las víctimas, el lugar, los corredores y la velocidad, y un desenlace que pone los límites antes de decir lo que sí se puede concluir, después del cual se abre la copa. Cada paso fija una sola idea y mueve el dashboard a la vista que la muestra, en lugar de usar diapositivas aparte, porque así el lector aprende dónde está cada cosa mientras sigue el relato y cuando la historia termina ya sabe volver a ella.
+
+\begin{table}[!htbp]\centering\small
+\begin{tabularx}{\linewidth}{clP{4.6cm}L}
 \toprule
-\textbf{Paso} & \textbf{Título} & \textbf{Por qué va ahí}\\
+\textbf{Paso} & \textbf{Parte} & \textbf{Título} & \textbf{Por qué va ahí}\\
 \midrule
-1 & Dónde están las cámaras & Ubica al lector y presenta la referencia antes de mostrar cifras.\\
-2 & Un quiebre en 2020 & Advierte sobre 2020 antes de comparar.\\
-3 & Cerca y lejos de las cámaras & Es la comparación central.\\
-4 & Peatones, motociclistas y ciclistas & Pasa de los siniestros a las personas.\\
-5 & Antes y después en el mapa & Lleva el cambio al lugar.\\
-6 & Corredores que se separan & Muestra que el total esconde diferencias.\\
-7 & Velocidad y gravedad & Explora un posible mecanismo.\\
-8 & Lo que los datos no dicen & Pone los límites antes de la conclusión.\\
-9 & Lo que sí se puede decir & Cierra con una afirmación acotada.\\
-10 & Ahora, a explorar & Abre la copa con accesos a las vistas.\\
+1 & Inicio & Dónde están las cámaras & Ubica al lector y presenta la referencia antes de mostrar cifras.\\
+2 & Inicio & Un quiebre en 2020 & Advierte sobre 2020 antes de comparar.\\
+3 & Nudo & Cerca y lejos de las cámaras & Es la comparación central.\\
+4 & Nudo & Peatones, motociclistas y ciclistas & Pasa de los siniestros a las personas.\\
+5 & Nudo & Antes y después en el mapa & Lleva el cambio al lugar.\\
+6 & Nudo & Corredores que se separan & Muestra que el total esconde diferencias.\\
+7 & Nudo & Velocidad y gravedad & Explora un posible mecanismo.\\
+8 & Desenlace & Lo que los datos no dicen & Pone los límites antes de la conclusión.\\
+9 & Desenlace & Lo que sí se puede decir & Cierra con una afirmación acotada.\\
+10 & Exploración & Ahora, a explorar & Abre la copa con accesos a las vistas.\\
 \bottomrule
 \end{tabularx}
 \caption{Pasos de la historia}
 \end{table}
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{h1}\hfill
 \includegraphics[width=0.49\linewidth]{h3}\par\smallskip
 \includegraphics[width=0.49\linewidth]{h6}\hfill
@@ -691,10 +855,37 @@ La historia quedó en nueve pasos guiados y un décimo de exploración libre. Se
 
 Durante los pasos guiados limitamos los controles para que cada texto coincida con lo que se ve, calculamos las cifras con los datos cargados para que no queden desactualizadas y al terminar no reiniciamos el dashboard, de modo que la exploración arranca desde lo último que se mostró. Si alguien se sale del guion se lo avisamos en lugar de bloquearlo por completo, y puede cerrar la historia en cualquier momento, porque obligar a terminar nueve pasos a quien ya tiene claro lo que busca iría en contra de la razón por la que dejamos la exploración libre.
 
-\clearpage
+\section{Otras consideraciones de diseño}
+
+Además de los idioms y los filtros hubo decisiones que atraviesan todas las vistas y que no responden una pregunta en particular, pero de las que depende que las respuestas se lean bien y no se presten para conclusiones que los datos no sostienen.
+
+\subsection{Percepción y carga cognitiva}
+
+Siguiendo la idea de Munzner de que es más fácil comparar con los ojos que con la memoria \cite[sección 6.5]{munzner}, procuramos que las cosas que se comparan estén a la vista al mismo tiempo, de modo que la zona con cámara aparece junto a las vías sin cámara, cada año se dibuja sobre 2019 y los dos grupos de meses comparten gráfica y tabla. Cuando la comparación importa más que los valores por separado la calculamos y la mostramos directamente, como ocurre con la diferencia entre dos series, para que nadie tenga que restar mentalmente dos líneas que casi se tocan.
+
+También tratamos de que lo necesario para entender una gráfica esté dentro de ella o pegado a ella, con rótulos directos sobre la línea del promedio, las multas y los periodos en lugar de leyendas alejadas, y con la guía de colores justo encima de lo que explica. El orden de las opciones sigue una lógica que se pueda anticipar, por eso la gravedad va de todos los siniestros a los de muertos y la categoría ``Otro'' queda al final de los tipos, y las vistas se reparten el contenido para que en ninguna compitan demasiadas cosas por la atención.
+
+\subsection{Integridad de la lectura}
+
+Una visualización sobre muertes en las vías puede usarse para defender o atacar un programa, así que cuidamos que la forma no exagere las diferencias. Las barras parten de cero porque su longitud es la que se lee, mientras que en las líneas de velocidad decidimos usar un rango ajustado a los datos que además incluye el límite del sitio, ya que en ellas el valor está en la posición y un eje desde cero aplanaría cambios de pocos kilómetros por hora que sí importan.
+
+La incertidumbre la hacemos visible donde cambia la lectura, con el número de siniestros junto a las cifras, un aviso y una barra con trama cuando la zona tiene muy pocos datos y una advertencia en la pantalla de inicio y en la historia sobre el alcance descriptivo de las comparaciones. Procuramos además no asignar colores de bueno o malo a las subidas y las bajadas, porque con una comparación que no prueba causalidad ese juicio le correspondería a quien lee y no a la gráfica.
+
+\subsection{Control, respuesta y casos sin datos}
+
+Quien explora debe poder equivocarse sin perderse, por eso siempre hay una forma de volver, ya sea quitando la selección donde se hizo, restableciendo los meses, mostrando de nuevo el mapa o reiniciando todo el dashboard, y unas etiquetas recuerdan qué alcance y qué filtros están activos para que una cifra no se lea como si fuera de toda la ciudad. La respuesta a un filtro o a un clic debe sentirse inmediata, y como dibujar más de cien mil puntos como elementos separados la volvía pesada, los pintamos sobre una sola capa y hacemos los cálculos en el mismo navegador.
+
+Hay combinaciones de filtros para las que no existe respuesta, como comparar cuando se elige solo el periodo anterior o mirar la velocidad de un corredor sin mediciones. En lugar de dejar un espacio en blanco o mostrar un cero que parecería un resultado, escribimos por qué no hay nada que mostrar y, cuando se puede, qué opción sí permite hacer la comparación.
+
+\subsection{Accesibilidad}
+
+No quisimos que la lectura dependiera de un solo canal, así que la zona con cámara y las vías sin cámara se distinguen por color y además por el trazo continuo o punteado, y los periodos se rotulan con su nombre además de pintarse. Escogimos para el contraste principal un rojo frente a grises con la intención de que se distingan también por claridad, aunque no hicimos una prueba formal con personas con daltonismo y esa es una verificación que queda pendiente.
+
+El tamaño mínimo de letra, las ayudas que se abren también con el foco del teclado, el contorno visible sobre el elemento enfocado y los nombres que describen los botones para los lectores de pantalla buscan que se pueda recorrer sin ratón, y cuando alguien ha pedido en su sistema reducir el movimiento se desactivan las transiciones del recorrido guiado y de la historia.
+
 \section{Evolución del dashboard y consideraciones de diseño}
 
-En esta sección contamos cómo estaba cada parte del dashboard, qué cambiamos y por qué, y buena parte de esos cambios salió de los comentarios del paper prototype. También hubo ideas que descartamos, como fusionar Comparar meses dentro de Evolución para quitar gráficas repetidas, que probamos y deshicimos. También quitamos la sección fija de preguntas al final de la página, porque alargaba el dashboard y pasó a una ventana de la pantalla de inicio, y el icono de cámara dibujado en el mapa, que se veía decorativo y cambiamos por un marcador geométrico.
+En esta sección contamos cómo estaba cada parte del dashboard, qué cambiamos y por qué.
 
 \subsection{Cuatro momentos del dashboard}
 
@@ -704,7 +895,7 @@ En la segunda sumamos la historia guiada y una cuarta vista, Panorama, para ver 
 
 La tercera fue una reescritura de la interfaz en la que cambiamos los nombres de las pestañas, la tipografía y el color, usamos un solo acento verde azulado para quitar el aspecto genérico y, sobre todo, cambiamos la forma de comparar, con barras sobre una escala común y la referencia sin cámara en un primer plano. La versión actual toma esa base, le da la identidad de Bogotá y ajusta cada vista a partir de lo que seguía sin entenderse.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth]{v1_mapa}\hfill
 \includegraphics[width=0.49\linewidth]{v2_mapa}\par\smallskip
 \includegraphics[width=0.49\linewidth]{v3_mapa}\hfill
@@ -714,107 +905,84 @@ La tercera fue una reescritura de la interfaz en la que cambiamos los nombres de
 
 \subsection{Mapa y cambios}
 
-Con 109.137 puntos no se veía ningún patrón, por lo que con poco zoom los agrupamos en celdas de densidad. Para la duda sobre si se tomaba toda la vía o solo un tramo agregamos la casilla ``Visualizar accidentes en corredor'', que muestra toda la vía sin cambiar la comparación con y sin cámara, y dejamos el mapa siempre a la izquierda, sin márgenes y con la opción de ocultarlo. En las vistas donde un filtro no cambia nada dejamos de mostrarlo, porque confundía.
+Con 109.137 puntos no se veía ningún patrón, por lo que con poco zoom los agrupamos en celdas de densidad. También agregamos la casilla ``Visualizar accidentes en corredor'', que muestra toda la vía sin cambiar la comparación con y sin cámara, y dejamos el mapa siempre a la izquierda, sin márgenes y con la opción de ocultarlo. En las vistas donde un filtro no cambia nada dejamos de mostrarlo, porque confundía.
 
 
-Al principio teníamos barras de antes y después con una escala distinta para cada zona, y el resultado quedaba escondido en una frase. Ahora son dos barras de cambio porcentual sobre una escala común, con las cifras en siniestros por mes y la diferencia escrita debajo, y el periodo elegido actúa como el ``después'' frente a 2019. Además avisamos cuando hay pocos siniestros, mientras que la diferencia que mostramos en \% y es la resta entre los dos cambios, así que no se debe leer como un cambio relativo.
+Al principio teníamos barras de antes y después con una escala distinta para cada zona, y el resultado quedaba escondido en una frase. Ahora son dos barras de cambio porcentual sobre una escala común, con las cifras en siniestros por mes y la diferencia escrita debajo, y el periodo elegido actúa como el ``después'' frente a 2019. Además avisamos cuando hay pocos siniestros. La diferencia que mostramos en \% es la resta entre los dos cambios, así que no se debe leer como un cambio relativo.
 
 \subsection{Evolución}
 
-La serie existe desde la primera versión, pero entonces era una línea sin una referencia contra la cual juzgar una caída, y la velocidad iba debajo con controles para prender y apagar cada línea. En las versiones siguientes dejamos la instalación y la pandemia siempre visibles, agregamos el promedio de 2019 y quitamos los controles que no aportaban cuando la leyenda ya nombraba las líneas.
+La serie existe desde la primera versión, pero entonces era una línea sin una referencia contra la cual juzgar una caída, y la velocidad iba debajo. En las versiones siguientes dejamos la instalación y la pandemia siempre visibles, para que ese contexto no dependiera de activar nada.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{v1_serie}\hfill
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{v3_serie}\hfill
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{i_serie}
 \caption{La serie en la primera versión, en la tercera y en la actual}
 \end{figure}
 
-A la serie le agregamos el promedio de 2019 para poder juzgar las caídas y las recuperaciones, y las cuatro líneas de los años, que se cruzaban, las separamos en recuadros con los mismos colores del resto del dashboard. Las franjas sombreadas de instalación y pandemia tapaban datos y se superponían, así que probamos trazos sobre la gráfica y terminamos con una cinta pegada al eje, siguiendo la idea de dejar el contexto cerca y alineado con los datos.
+A la serie le agregamos el promedio de 2019 para poder juzgar las caídas y las recuperaciones, y las cuatro líneas de los años, que se cruzaban, las separamos en recuadros con los mismos colores del resto del dashboard. Las franjas sombreadas de instalación y pandemia tapaban datos y se superponían, así que las reemplazamos por una cinta pegada al eje, siguiendo la idea de dejar el contexto cerca y alineado con los datos.
 
-En la velocidad sumamos la diferencia entre los tramos con y sin cámara en km/h, porque a ojo las dos líneas parecían paralelas, y descartamos otra gráfica de cambio frente a 2019 porque repetía la información. También reescribimos la explicación del P85 para decir que 15 de cada 100 vehículos van más rápido.
+En la velocidad sumamos la diferencia entre los tramos con y sin cámara en km/h, porque a ojo las dos líneas parecían paralelas. También reescribimos la explicación del P85 para decir que 15 de cada 100 vehículos van más rápido.
 
 \subsection{Corredores}
 
-La vista de corredores nació como Panorama, con un gráfico de mancuernas por gravedad, un diagrama de puntos de los 18 corredores y una dispersión de velocidad, además de un selector de gravedad propio que repetía el filtro global. Varias gráficas respondían lo mismo y ninguna llevaba al detalle de un corredor, por lo que fuimos reduciendo hasta una sola lista ordenable con el detalle al lado.
+La vista de corredores nació como Panorama, con un gráfico de mancuernas por gravedad, un diagrama de puntos de los 18 corredores y una dispersión de velocidad, además de un selector de gravedad propio que repetía el filtro global. La versión actual concentra esa información en una lista ordenable con el detalle al lado, que lleva directamente del conjunto a un corredor.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.325\linewidth,height=0.25\textheight,keepaspectratio]{v2_pan}\hfill
 \includegraphics[width=0.325\linewidth,height=0.25\textheight,keepaspectratio]{v3_corr}\hfill
 \includegraphics[width=0.325\linewidth,height=0.25\textheight,keepaspectratio]{i_corredores}
 \caption{Panorama, la primera lista de corredores y la lista actual}
 \end{figure}
 
-Corredores fue la vista que más rediseñamos, ya que en la primera versión varias gráficas respondían lo mismo y el flujo no llevaba a un detalle, así que pasamos a una lista con barras centradas en la referencia, donde un corredor con muy pocos siniestros dominaba la escala. Después pusimos el mapa al lado, enlazado con la lista al pasar el cursor, compactamos el detalle y le agregamos unidades a cada cifra, porque un ``72,6'' suelto no decía qué se contaba, y por último ensanchamos las miniaturas, marcamos los años y la instalación y pusimos una guía en la gráfica de detalle.
-
-Los rótulos del eje pasaron por varias redacciones hasta volver a ``Menos casos que sin cámara'' y ``Más casos que sin cámara'', que fueron los más fáciles de entender aunque en el resto del dashboard hablamos de siniestros. Probamos redacciones con ``reducción'' y con ``bajó más'' o ``bajó menos'', que eran más precisas para los corredores donde los siniestros subieron, pero sonaban raras o había que releerlas, así que preferimos el rótulo corto y dejamos la explicación completa en el icono de ayuda.
+En esa lista las barras se centran en la referencia y los corredores con muy pocos siniestros no definen la escala. Además pusimos el mapa al lado, enlazado con la lista al pasar el cursor, compactamos el detalle y le agregamos unidades a cada cifra, porque un ``72,6'' suelto no decía qué se contaba, y por último ensanchamos las miniaturas, marcamos los años y la instalación y pusimos una guía en la gráfica de detalle.
 
 \subsection{Comparación de meses}
 
-Comparar meses fue la otra vista que cambió muchas veces, porque la tarea parece sencilla pero pide elegir dos conjuntos de meses, verlos y leer su diferencia sin que ninguna de las tres cosas estorbe a las otras. En la tabla se ve qué problema nos llevó de una versión a la siguiente, hasta quedarnos con una sola forma de seleccionar.
+Comparar meses pasó de enfrentar dos meses sueltos con tarjetas a comparar dos grupos de meses, porque un solo mes tiene mucho ruido. Los grupos se eligen con clic o arrastre sobre las barras, se comparan como promedio mensual y la tabla de abajo reúne las cifras, para que elegir, ver y leer la diferencia no se estorben entre sí.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{v1_ab}\hfill
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{v3_ab}\hfill
 \includegraphics[width=0.325\linewidth,height=0.22\textheight,keepaspectratio]{i_ab}
-\caption{Dos meses con tarjetas, bandas arrastrables y grupos de meses}
+\caption{Dos meses con tarjetas, una versión intermedia y los grupos de meses actuales}
 \end{figure}
-
-\begin{table}[H]\centering\small
-\begin{tabularx}{\linewidth}{LL}
-\toprule
-\textbf{Versión} & \textbf{Problema que llevó al siguiente paso}\\
-\midrule
-Dos meses sueltos con tarjetas & Mucho texto, y un solo mes tiene mucho ruido.\\
-Tabla de A, B y cambio & Poco gráfico.\\
-Barras con A y B coloreadas & Las guías punteadas molestaban.\\
-Grupos de meses con clic y arrastre & Era un poco complicada.\\
-Bandas arrastrables & Manijas pesadas y difícil de restablecer.\\
-Bandas o meses sueltos & Dos formas de hacer lo mismo.\\
-Actual, solo meses sueltos & Se elige con clic y arrastre y se compara como promedio mensual.\\
-\bottomrule
-\end{tabularx}
-\caption{Recorrido de Comparar meses}
-\end{table}
 
 \subsection{Historia y orientación}
 
-La primera versión solo tenía una ayuda para aprender a usar los controles. La historia llegó en la segunda, organizada en tres actos, y cambió varias veces de pasos y de títulos, que al comienzo tenían un tono dramático como ``92 cámaras, 40 sitios, una promesa'' o ``La comparación incómoda''. Los cambiamos por títulos descriptivos porque sonaban a opinión y no a lo que se veía en pantalla. Además, las cifras escritas a mano pasaron a calcularse con los datos y el último paso dejó de devolver el dashboard a como estaba antes de la historia, ya que eso contradecía la idea de abrir la copa a la exploración.
+La primera versión solo tenía una ayuda para aprender a usar los controles. La historia llegó en la segunda, organizada en inicio, nudo y desenlace. Hoy las cifras de los textos se calculan con los datos y el último paso deja el dashboard tal como quedó, para que la exploración continúe desde allí.
 
-\begin{figure}[H]\centering
+\begin{figure}[!htbp]\centering
 \includegraphics[width=0.49\linewidth,height=0.27\textheight,keepaspectratio]{v2_historia}\hfill
 \includegraphics[width=0.49\linewidth,height=0.27\textheight,keepaspectratio]{h1}
 \caption{La historia en la segunda versión y en la actual}
 \end{figure}
 
-En la misma línea, la pantalla de inicio pasó de un título largo, un párrafo y una lista numerada a mostrar la serie real de la ciudad con una acción principal, y las preguntas, que probamos como una sección fija al final de la página, terminaron en una ventana que se abre desde allí.
+En la misma línea, la pantalla de inicio pasó de un título largo, un párrafo y una lista numerada a mostrar la serie real de la ciudad con una acción principal, y las preguntas se abren en una ventana desde allí, de modo que no alargan el dashboard.
 
-\subsection{Identidad, textos y cifras}
+\subsection{Identidad y legibilidad}
 
-Al comienzo había textos de 10 a 12,5 píxeles que costaba leer, así que subimos el mínimo a 13 y dejamos una sola familia sin serifas en lugar de combinar serifas y monoespaciada. En el color pasamos de azul y rojo a un acento verde azulado y finalmente al rojo y amarillo de la bandera de Bogotá sobre fondo blanco, para darle identidad, entendiendo que el rojo señala lo observado y no un juicio.
+Al comienzo había textos de 10 a 12,5 píxeles que costaba leer, así que subimos el mínimo a 13 y dejamos una sola familia sin serifas en lugar de combinar serifas y monoespaciada. En el color adoptamos el rojo y el amarillo de la bandera de Bogotá sobre fondo blanco para darle identidad, entendiendo que el rojo señala lo observado y no un juicio.
 
-Como el encabezado se veía genérico, le dimos más peso, una marca con los colores de la bandera y un subtítulo en forma de pregunta. En los iconos nos pasamos al principio, de modo que dejamos solo los que aportan información o ayudan a reconocer una acción, y usamos un mismo kit de componentes, con búsqueda en corredor y sitio, para que todo se comporte igual.
+Como el encabezado se veía genérico, le dimos más peso, una marca con los colores de la bandera y un subtítulo en forma de pregunta. Usamos iconos solo donde aportan información o ayudan a reconocer una acción, y un mismo kit de componentes, con búsqueda en corredor y sitio, para que todo se comporte igual.
 
-En los textos fuimos cambiando términos y redacción a medida que algo no se entendía o se prestaba para dos lecturas. La regla que terminamos siguiendo es que un mismo concepto se nombra siempre igual y con palabras que usaría cualquiera de los tres perfiles, porque un término técnico o un sinónimo hace pensar que se está hablando de otra cosa.
-
-
-\begin{table}[H]\centering\small
-\begin{tabularx}{\linewidth}{P{4.4cm}P{4.4cm}L}
-\toprule
-\textbf{Antes} & \textbf{Ahora} & \textbf{Razón}\\
-\midrule
-``Elige'', ``Haz clic'' & Infinitivos o impersonal & Evitar tutear.\\
-``Control'' & ``Vías sin cámara'' & El término era ambiguo.\\
-``Casos'' y ``siniestros'' mezclados & ``Siniestros'' & Consistencia.\\
-``p.p.'' & ``\%'' & Lectura más sencilla.\\
-Descripciones que empezaban con ``Permite'' & Enunciados breves & Es un dashboard y no una guía.\\
-Explicaciones largas a la vista & Icono de ayuda & Detalle a demanda, también al tocar.\\
-\bottomrule
-\end{tabularx}
-\caption{Cambios de redacción}
-\end{table}
-
-
-Cada cifra lleva su unidad (``siniestros por mes'' y no un número suelto), usamos la coma decimal y el punto de miles como se escriben en Colombia, un solo decimal en promedios y porcentajes, y el signo en los cambios para saber de un vistazo si algo subió o bajó. En los textos hablamos de que algo cambió y no de que las cámaras lo cambiaron.
+\bigskip
+\phantomsection
+\addcontentsline{toc}{section}{Referencias}
+\begin{thebibliography}{99}
+\raggedright
+\bibitem{historico} Secretaría Distrital de Movilidad de Bogotá. \textit{Histórico Siniestros Bogotá D.C.} Capa de siniestros viales georreferenciados desde 2015, licencia CC BY, modificada el 18 de noviembre de 2022. Consultada el 12 de noviembre de 2026. \url{https://services2.arcgis.com/NEwhEo9GGSHXcRXV/arcgis/rest/services/HistoricoSiniestros/FeatureServer}. Ficha en Datos Abiertos Bogotá: \url{https://datosabiertos.bogota.gov.co/dataset/historico-siniestros-bogota-d-c}.
+\bibitem{anuarios} Secretaría Distrital de Movilidad de Bogotá. \textit{Bases de siniestralidad 2018 a 2022.}\newline
+2018 \url{https://datos.movilidadbogota.gov.co/documents/8d9c74328a2a4b00a64ddf9e73f94590/about}\newline
+2019 \url{https://datos.movilidadbogota.gov.co/documents/567b6e1dfd744e21b43b9cef77d5ded3/about}\newline
+2020 \url{https://datos.movilidadbogota.gov.co/documents/d5e7858e5460436da02fb0db15e2b1d9}\newline
+2021 \url{https://datos.movilidadbogota.gov.co/documents/16d86659699e4cf0916c9475da951bc1/about}\newline
+2022 \url{https://datos.movilidadbogota.gov.co/documents/53c3b17894f94f69a513c22ad20b2913}
+\bibitem{camaras} Secretaría Distrital de Movilidad de Bogotá. \textit{Cámaras Salvavidas Bogotá.} \url{https://datos.movilidadbogota.gov.co/datasets/movilidadbogota::camaras-salvavidas-bogota/about}
+\bibitem{velocidades} Secretaría Distrital de Movilidad de Bogotá. \textit{Velocidades Bitcarrier por mes y red de sensores.} \url{https://datos.movilidadbogota.gov.co/search?groupIds=71ef3e63c60749cbb89028c76558a304&sort=Title%7Ctitle%7Casc&tags=Velocidad}
+\bibitem{segel} Edward Segel y Jeffrey Heer. \textit{Narrative Visualization: Telling Stories with Data.} \url{http://vis.stanford.edu/files/2010-Narrative-InfoVis.pdf}
+\bibitem{munzner} Tamara Munzner. \textit{Visualization Analysis and Design.} A K Peters/CRC Press, 2014.
+\end{thebibliography}
 
 \end{document}
